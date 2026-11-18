@@ -890,6 +890,11 @@ class MainWindow(QtWidgets.QMainWindow):
         self._rt_in_cooldown = False
         self._ui_dirty = False
         self._latest_js_hz = 0.0
+        self._last_manual_jog_time = 0.0
+        self._last_gripper_drag_time = 0.0
+        self._manual_target_pending = False
+        self._preview_staged = False
+        self._motion_in_flight = False
 
         self.bridge = RosBridgeWorker(ros_args=ros_args)
         self.bridge.joint_states_received.connect(self._on_joint_states)
@@ -906,7 +911,7 @@ class MainWindow(QtWidgets.QMainWindow):
         self._rt_cooldown_timer.timeout.connect(self._on_rt_cooldown_done)
 
         self._ui_refresh_timer = QtCore.QTimer(self)
-        self._ui_refresh_timer.setInterval(50)
+        self._ui_refresh_timer.setInterval(33)
         self._ui_refresh_timer.timeout.connect(self._flush_ui_refresh)
         self._ui_refresh_timer.start()
 
@@ -1357,7 +1362,49 @@ class MainWindow(QtWidgets.QMainWindow):
         self._use_degrees = not self.btn_unit.isChecked()
         self.btn_unit.setText('Units: Degrees (°)' if self._use_degrees else 'Units: Radians (rad)')
         self._sync_target_widgets()
+        if not self._preview_staged and self._first_js_received:
+            self._sync_sliders_to_joints(self._actual_joints)
         self._update_actual_labels()
+
+    def _sync_sliders_to_joints(self, joints: Sequence[float]) -> None:
+        """Update joint sliders and spinboxes cleanly without fighting active user edits."""
+        self._updating_widgets = True
+        try:
+            for i, val in enumerate(joints):
+                slider = self.joint_sliders[i]
+                spin = self.joint_spins[i]
+                if not slider.isSliderDown():
+                    raw = int(round(math.degrees(val) * 10)) if self._use_degrees else int(round(val * 1000))
+                    if slider.value() != raw:
+                        slider.setValue(raw)
+                if not spin.hasFocus():
+                    sval = math.degrees(val) if self._use_degrees else val
+                    tol = 1e-2 if self._use_degrees else 5e-4
+                    if abs(spin.value() - sval) > tol:
+                        spin.setValue(sval)
+        finally:
+            self._updating_widgets = False
+
+    def _stage_execution_target_ui(self) -> None:
+        self._preview_staged = False
+        self._manual_target_pending = False
+        self._motion_in_flight = True
+        if self._first_js_received:
+            self.viewport.set_target_joints(self._target_joints)
+            self._refresh_fk_labels()
+        else:
+            self._sync_target_widgets()
+
+    def _mark_manual_jog(self) -> None:
+        if self.chk_live_jog.isChecked():
+            self._manual_target_pending = True
+            self._preview_staged = False
+            self._motion_in_flight = False
+            self._last_manual_jog_time = time.monotonic()
+            self._queue_rt_stream()
+        else:
+            self._preview_staged = True
+            self._manual_target_pending = False
 
     def _sync_target_widgets(self) -> None:
         self._updating_widgets = True
@@ -1422,8 +1469,7 @@ class MainWindow(QtWidgets.QMainWindow):
         self._updating_widgets = False
         self.viewport.set_target_joints(self._target_joints)
         self._refresh_fk_labels()
-        if self.chk_live_jog.isChecked():
-            self._queue_rt_stream()
+        self._mark_manual_jog()
 
     def _on_spin_changed(self, idx: int, val: float) -> None:
         if self._updating_widgets:
@@ -1434,16 +1480,14 @@ class MainWindow(QtWidgets.QMainWindow):
         self._updating_widgets = False
         self.viewport.set_target_joints(self._target_joints)
         self._refresh_fk_labels()
-        if self.chk_live_jog.isChecked():
-            self._queue_rt_stream()
+        self._mark_manual_jog()
 
     def _jog_joint(self, idx: int, sign: int) -> None:
         step_deg = float(self.cmb_joint_step.currentText().rstrip('°'))
         self._target_joints[idx] += sign * math.radians(step_deg)
         self._target_joints = list(clamp_joints(self._target_joints))
         self._sync_target_widgets()
-        if self.chk_live_jog.isChecked():
-            self._queue_rt_stream()
+        self._mark_manual_jog()
 
     def _update_actual_labels(self) -> None:
         for i, val in enumerate(self._actual_joints):
@@ -1510,8 +1554,7 @@ class MainWindow(QtWidgets.QMainWindow):
             sp.blockSignals(True)
             sp.setValue(v)
             sp.blockSignals(False)
-        if self.chk_live_jog.isChecked():
-            self._queue_rt_stream()
+        self._mark_manual_jog()
 
     def _request_ik(self, execute: bool) -> None:
         xyz = [self.ik_spins[0].value(), self.ik_spins[1].value(), self.ik_spins[2].value()]
@@ -1531,18 +1574,23 @@ class MainWindow(QtWidgets.QMainWindow):
         self._log(detail)
         if ok:
             self._target_joints = list(clamp_joints(joints))
-            self._sync_target_widgets()
             if self._execute_next_ik:
                 self._execute_next_ik = False
                 self._execute_target_joints()
+            else:
+                self._preview_staged = True
+                self._manual_target_pending = False
+                self._sync_target_widgets()
         else:
             self._execute_next_ik = False
 
     # --- Execution & Presets ---
     def _execute_target_joints(self) -> None:
+        self._stage_execution_target_ui()
         self.bridge.send_joint_trajectory(self._target_joints, self.spin_duration.value())
 
     def _moveit_execute_target_joints(self) -> None:
+        self._stage_execution_target_ui()
         pipeline = self.cmb_pipeline.currentText()
         planner_id = 'PTP' if pipeline == 'pilz_industrial_motion_planner' else ''
         self.bridge.moveit_plan_and_execute_joints(
@@ -1550,6 +1598,9 @@ class MainWindow(QtWidgets.QMainWindow):
         )
 
     def _moveit_plan_to_pose(self) -> None:
+        self._preview_staged = False
+        self._manual_target_pending = False
+        self._motion_in_flight = True
         xyz = [self.ik_spins[0].value(), self.ik_spins[1].value(), self.ik_spins[2].value()]
         rpy = [math.radians(self.ik_spins[i].value()) for i in (3, 4, 5)]
         pipeline = self.cmb_pipeline.currentText()
@@ -1565,17 +1616,26 @@ class MainWindow(QtWidgets.QMainWindow):
 
     def _apply_preset(self, name: str, execute: bool) -> None:
         self._target_joints = list(POSES[name])
-        self._sync_target_widgets()
         self._log(f'Preset "{name}" loaded.')
         if execute:
             self._execute_target_joints()
+        else:
+            self._preview_staged = True
+            self._manual_target_pending = False
+            self._sync_target_widgets()
 
     def _sync_from_actual(self) -> None:
+        self._preview_staged = False
+        self._manual_target_pending = False
+        self._motion_in_flight = False
         self._target_joints = list(self._actual_joints)
         self._sync_target_widgets()
         self._log('Synced target joints to actual robot state.')
 
     def _on_estop(self) -> None:
+        self._preview_staged = False
+        self._manual_target_pending = False
+        self._motion_in_flight = False
         self._stop_sequence()
         self.bridge.emergency_stop()
 
@@ -1585,6 +1645,7 @@ class MainWindow(QtWidgets.QMainWindow):
             return
         width_m = raw / 10000.0
         self._target_gripper = width_m
+        self._last_gripper_drag_time = time.monotonic()
         self.viewport.set_gripper_width(target_m=width_m)
         self._refresh_gripper_label()
         self.bridge.send_gripper(width_m)
@@ -1592,9 +1653,10 @@ class MainWindow(QtWidgets.QMainWindow):
     def _set_gripper_width(self, width_m: float, publish: bool = True) -> None:
         w = max(0.0, min(0.040, float(width_m)))
         self._target_gripper = w
-        self._updating_widgets = True
-        self.slider_gripper.setValue(int(round(w * 10000.0)))
-        self._updating_widgets = False
+        if not publish or not self._first_js_received:
+            self._updating_widgets = True
+            self.slider_gripper.setValue(int(round(w * 10000.0)))
+            self._updating_widgets = False
         self.viewport.set_gripper_width(target_m=w)
         self._refresh_gripper_label()
         if publish:
@@ -1646,7 +1708,7 @@ class MainWindow(QtWidgets.QMainWindow):
             return
         name, joints, dur, grip_mm = self._waypoint_from_row(row)
         self._target_joints = joints
-        self._sync_target_widgets()
+        self._stage_execution_target_ui()
         if grip_mm is not None:
             self._set_gripper_width(grip_mm / 1000.0, publish=True)
         self.bridge.send_joint_trajectory(joints, dur)
@@ -1690,6 +1752,7 @@ class MainWindow(QtWidgets.QMainWindow):
         self._dispatch_sequence_step()
 
     def _stop_sequence(self) -> None:
+        self._motion_in_flight = False
         if self._sequence_running:
             self._sequence_running = False
             self.btn_run_seq.setEnabled(True)
@@ -1709,7 +1772,7 @@ class MainWindow(QtWidgets.QMainWindow):
         name, joints, dur, grip_mm = self._waypoint_from_row(self._sequence_idx)
         prev_joints = list(self._target_joints)
         self._target_joints = joints
-        self._sync_target_widgets()
+        self._stage_execution_target_ui()
         if grip_mm is not None:
             self._set_gripper_width(grip_mm / 1000.0, publish=True)
         self._log(f'Sequence [{self._sequence_idx + 1}/{self.tbl_waypoints.rowCount()}] -> {name}')
@@ -1766,12 +1829,47 @@ class MainWindow(QtWidgets.QMainWindow):
             self._copy_current_ee_to_ik()
 
     def _flush_ui_refresh(self) -> None:
+        now = time.monotonic()
+        any_joint_drag = any(s.isSliderDown() for s in self.joint_sliders) or any(
+            sp.hasFocus() for sp in self.joint_spins
+        )
+        if self._manual_target_pending:
+            max_err = max(abs(a - t) for a, t in zip(self._actual_joints, self._target_joints))
+            if not any_joint_drag and (max_err < 0.015 or (now - self._last_manual_jog_time) > 1.0):
+                self._manual_target_pending = False
+
         if not self._ui_dirty:
             return
         self._ui_dirty = False
         self._update_actual_labels()
+        if (
+            self._first_js_received
+            and not self._preview_staged
+            and not self._manual_target_pending
+            and not any_joint_drag
+        ):
+            if not self._motion_in_flight and not self._sequence_running:
+                self._target_joints = list(self._actual_joints)
+                self.viewport.set_target_joints(self._target_joints)
+            self._sync_sliders_to_joints(self._actual_joints)
+
+        if not self.slider_gripper.isSliderDown() and (now - self._last_gripper_drag_time) > 0.5:
+            grip_raw = int(round(max(0.0, min(0.040, self._actual_gripper)) * 10000.0))
+            if self.slider_gripper.value() != grip_raw:
+                self._updating_widgets = True
+                try:
+                    self.slider_gripper.setValue(grip_raw)
+                finally:
+                    self._updating_widgets = False
+            if not self._motion_in_flight and not self._sequence_running:
+                self._target_gripper = self._actual_gripper
+            self.viewport.set_gripper_width(
+                actual_m=self._actual_gripper, target_m=self._target_gripper
+            )
+        else:
+            self.viewport.set_gripper_width(actual_m=self._actual_gripper)
+
         self.viewport.set_actual_joints(self._actual_joints)
-        self.viewport.set_gripper_width(actual_m=self._actual_gripper)
         self._refresh_gripper_label()
         self._refresh_fk_labels()
         self._set_badge_state(self.badge_js, f'JointStates: {self._latest_js_hz:.0f} Hz', True)
@@ -1783,6 +1881,7 @@ class MainWindow(QtWidgets.QMainWindow):
         self._set_badge_state(self.badge_moveit, 'MoveIt 2: READY' if moveit_ok else 'MoveIt 2: OFFLINE', moveit_ok)
 
     def _on_motion_finished(self, ok: bool, msg: str) -> None:
+        self._motion_in_flight = False
         if self._sequence_running:
             if ok:
                 self._sequence_idx += 1
@@ -1822,6 +1921,24 @@ def run_self_test() -> int:
     win._cartesian_jog(0, +1, True)
     win._set_gripper_width(0.0155, publish=False)
     win._populate_pick_and_place_waypoints()
+
+    # Verify live slider & gripper tracking from incoming /joint_states stream
+    win._sync_from_actual()
+    win._on_joint_states(POSES['ready'], 30.0)
+    pick_q = POSES['pick']
+    win._on_joint_states(pick_q, 30.0)
+    win._on_gripper_state(0.024)
+    win._flush_ui_refresh()
+    expected_j1_raw = int(round(math.degrees(pick_q[0]) * 10))
+    if abs(win.joint_sliders[0].value() - expected_j1_raw) > 1 or abs(win.slider_gripper.value() - 240) > 1:
+        print(
+            f'SELF-TEST FAILED: slider tracking mismatch '
+            f'(j1={win.joint_sliders[0].value()} vs {expected_j1_raw}, '
+            f'grip={win.slider_gripper.value()} vs 240)',
+            file=sys.stderr,
+        )
+        return 1
+
     pixmap = win.viewport.grab()
     if pixmap.isNull():
         print('SELF-TEST FAILED: 3D viewport failed to render', file=sys.stderr)
