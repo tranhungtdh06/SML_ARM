@@ -1,0 +1,199 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<robot name="sml_arm">
+  <group name="arm">
+    <chain base_link="base_link" tip_link="ee_link"/>
+  </group>
+
+  <group name="gripper">
+    <link name="gripper_base_link"/>
+    <link name="gripper_left_finger"/>
+    <link name="gripper_right_finger"/>
+    <link name="tcp_link"/>
+    <joint name="gripper_left_finger_joint"/>
+    <joint name="gripper_right_finger_joint"/>
+  </group>
+
+  <group_state name="open" group="gripper">
+    <joint name="gripper_left_finger_joint" value="0.038"/>
+    <joint name="gripper_right_finger_joint" value="0.038"/>
+  </group_state>
+  <group_state name="close" group="gripper">
+    <joint name="gripper_left_finger_joint" value="0.015"/>
+    <joint name="gripper_right_finger_joint" value="0.015"/>
+  </group_state>
+
+  <group_state name="home" group="arm">
+    <joint name="dof_joint1" value="0.0"/>
+    <joint name="dof_joint2" value="0.0"/>
+    <joint name="dof_joint3" value="0.0"/>
+    <joint name="dof_joint4" value="0.0"/>
+    <joint name="dof_joint5" value="0.0"/>
+    <joint name="dof_joint6" value="0.0"/>
+  </group_state>
+  <group_state name="ready" group="arm">
+    <joint name="dof_joint1" value="0.0"/>
+    <joint name="dof_joint2" value="-0.45"/>
+    <joint name="dof_joint3" value="0.9"/>
+    <joint name="dof_joint4" value="0.0"/>
+    <joint name="dof_joint5" value="0.65"/>
+    <joint name="dof_joint6" value="0.0"/>
+  </group_state>
+  <group_state name="inspect" group="arm">
+    <joint name="dof_joint1" value="0.75"/>
+    <joint name="dof_joint2" value="-0.35"/>
+    <joint name="dof_joint3" value="0.85"/>
+    <joint name="dof_joint4" value="0.4"/>
+    <joint name="dof_joint5" value="0.7"/>
+    <joint name="dof_joint6" value="-0.4"/>
+  </group_state>
+  <group_state name="pick" group="arm">
+    <joint name="dof_joint1" value="-0.5586"/>
+    <joint name="dof_joint2" value="-0.4138"/>
+    <joint name="dof_joint3" value="1.4686"/>
+    <joint name="dof_joint4" value="0.0"/>
+    <joint name="dof_joint5" value="-1.2596"/>
+    <joint name="dof_joint6" value="-0.5586"/>
+  </group_state>
+  <group_state name="place" group="arm">
+    <joint name="dof_joint1" value="0.5586"/>
+    <joint name="dof_joint2" value="-0.4138"/>
+    <joint name="dof_joint3" value="1.4686"/>
+    <joint name="dof_joint4" value="0.0"/>
+    <joint name="dof_joint5" value="-1.2596"/>
+    <joint name="dof_joint6" value="0.5586"/>
+  </group_state>
+
+  <end_effector name="gripper" parent_link="ee_link" group="gripper" parent_group="arm"/>
+
+  <virtual_joint name="virtual_joint" type="fixed" parent_frame="world" child_link="base_link"/>
+
+  <disable_collisions link1="base_link" link2="j1_harmonic_drive" reason="Adjacent"/>
+  <disable_collisions link1="base_link" link2="j1_stepper_motor" reason="Adjacent"/>
+  <disable_collisions link1="j1_harmonic_drive" link2="j1_stepper_motor" reason="Adjacent"/>
+  <disable_collisions link1="j2_harmonic_drive" link2="link_1" reason="Adjacent"/>
+  <disable_collisions link1="j2_stepper_motor" link2="link_1" reason="Adjacent"/>
+  <disable_collisions link1="j2_harmonic_drive" link2="j2_stepper_motor" reason="Adjacent"/>
+  <disable_collisions link1="j3_harmonic_drive" link2="link_2__1_" reason="Adjacent"/>
+  <disable_collisions link1="j3_stepper_motor" link2="link_2__1_" reason="Adjacent"/>
+  <disable_collisions link1="j3_harmonic_drive" link2="j3_stepper_motor" reason="Adjacent"/>
+  <disable_collisions link1="j4_harmonic_drive" link2="link_3__1_" reason="Adjacent"/>
+  <disable_collisions link1="j4_stepper_motor" link2="link_3__1_" reason="Adjacent"/>
+  <disable_collisions link1="j4_harmonic_drive" link2="j4_stepper_motor" reason="Adjacent"/>
+  <disable_collisions link1="j5_harmonic_drive" link2="link_4__1_" reason="Adjacent"/>
+  <disable_collisions link1="j5_stepper_motor" link2="link_4__1_" reason="Adjacent"/>
+  <disable_collisions link1="j5_harmonic_drive" link2="j5_stepper_motor" reason="Adjacent"/>
+  <disable_collisions link1="j6_harmonic_drive" link2="link_5__1_" reason="Adjacent"/>
+  <disable_collisions link1="j6_stepper_motor" link2="link_5__1_" reason="Adjacent"/>
+  <disable_collisions link1="j6_harmonic_drive" link2="j6_stepper_motor" reason="Adjacent"/>
+  <disable_collisions link1="base_link" link2="link_1" reason="Adjacent"/>
+  <disable_collisions link1="base_link" link2="j2_harmonic_drive" reason="Adjacent"/>
+  <disable_collisions link1="base_link" link2="j2_stepper_motor" reason="Adjacent"/>
+  <disable_collisions link1="j1_harmonic_drive" link2="link_1" reason="Adjacent"/>
+  <disable_collisions link1="j1_harmonic_drive" link2="j2_harmonic_drive" reason="Adjacent"/>
+  <disable_collisions link1="j1_harmonic_drive" link2="j2_stepper_motor" reason="Adjacent"/>
+  <disable_collisions link1="j1_stepper_motor" link2="link_1" reason="Adjacent"/>
+  <disable_collisions link1="j1_stepper_motor" link2="j2_harmonic_drive" reason="Adjacent"/>
+  <disable_collisions link1="j1_stepper_motor" link2="j2_stepper_motor" reason="Adjacent"/>
+  <disable_collisions link1="link_1" link2="link_2__1_" reason="Adjacent"/>
+  <disable_collisions link1="j3_harmonic_drive" link2="link_1" reason="Adjacent"/>
+  <disable_collisions link1="j3_stepper_motor" link2="link_1" reason="Adjacent"/>
+  <disable_collisions link1="j2_harmonic_drive" link2="link_2__1_" reason="Adjacent"/>
+  <disable_collisions link1="j2_harmonic_drive" link2="j3_harmonic_drive" reason="Adjacent"/>
+  <disable_collisions link1="j2_harmonic_drive" link2="j3_stepper_motor" reason="Adjacent"/>
+  <disable_collisions link1="j2_stepper_motor" link2="link_2__1_" reason="Adjacent"/>
+  <disable_collisions link1="j2_stepper_motor" link2="j3_harmonic_drive" reason="Adjacent"/>
+  <disable_collisions link1="j2_stepper_motor" link2="j3_stepper_motor" reason="Adjacent"/>
+  <disable_collisions link1="link_2__1_" link2="link_3__1_" reason="Adjacent"/>
+  <disable_collisions link1="j4_harmonic_drive" link2="link_2__1_" reason="Adjacent"/>
+  <disable_collisions link1="j4_stepper_motor" link2="link_2__1_" reason="Adjacent"/>
+  <disable_collisions link1="j3_harmonic_drive" link2="link_3__1_" reason="Adjacent"/>
+  <disable_collisions link1="j3_harmonic_drive" link2="j4_harmonic_drive" reason="Adjacent"/>
+  <disable_collisions link1="j3_harmonic_drive" link2="j4_stepper_motor" reason="Adjacent"/>
+  <disable_collisions link1="j3_stepper_motor" link2="link_3__1_" reason="Adjacent"/>
+  <disable_collisions link1="j3_stepper_motor" link2="j4_harmonic_drive" reason="Adjacent"/>
+  <disable_collisions link1="j3_stepper_motor" link2="j4_stepper_motor" reason="Adjacent"/>
+  <disable_collisions link1="link_3__1_" link2="link_4__1_" reason="Adjacent"/>
+  <disable_collisions link1="j5_harmonic_drive" link2="link_3__1_" reason="Adjacent"/>
+  <disable_collisions link1="j5_stepper_motor" link2="link_3__1_" reason="Adjacent"/>
+  <disable_collisions link1="j4_harmonic_drive" link2="link_4__1_" reason="Adjacent"/>
+  <disable_collisions link1="j4_harmonic_drive" link2="j5_harmonic_drive" reason="Adjacent"/>
+  <disable_collisions link1="j4_harmonic_drive" link2="j5_stepper_motor" reason="Adjacent"/>
+  <disable_collisions link1="j4_stepper_motor" link2="link_4__1_" reason="Adjacent"/>
+  <disable_collisions link1="j4_stepper_motor" link2="j5_harmonic_drive" reason="Adjacent"/>
+  <disable_collisions link1="j4_stepper_motor" link2="j5_stepper_motor" reason="Adjacent"/>
+  <disable_collisions link1="link_4__1_" link2="link_5__1_" reason="Adjacent"/>
+  <disable_collisions link1="j6_harmonic_drive" link2="link_4__1_" reason="Adjacent"/>
+  <disable_collisions link1="j6_stepper_motor" link2="link_4__1_" reason="Adjacent"/>
+  <disable_collisions link1="j5_harmonic_drive" link2="link_5__1_" reason="Adjacent"/>
+  <disable_collisions link1="j5_harmonic_drive" link2="j6_harmonic_drive" reason="Adjacent"/>
+  <disable_collisions link1="j5_harmonic_drive" link2="j6_stepper_motor" reason="Adjacent"/>
+  <disable_collisions link1="j5_stepper_motor" link2="link_5__1_" reason="Adjacent"/>
+  <disable_collisions link1="j5_stepper_motor" link2="j6_harmonic_drive" reason="Adjacent"/>
+  <disable_collisions link1="j5_stepper_motor" link2="j6_stepper_motor" reason="Adjacent"/>
+  <disable_collisions link1="base_link" link2="link_2__1_" reason="Never"/>
+  <disable_collisions link1="base_link" link2="j3_harmonic_drive" reason="Never"/>
+  <disable_collisions link1="base_link" link2="j3_stepper_motor" reason="Never"/>
+  <disable_collisions link1="j1_harmonic_drive" link2="link_2__1_" reason="Never"/>
+  <disable_collisions link1="j1_harmonic_drive" link2="j3_harmonic_drive" reason="Never"/>
+  <disable_collisions link1="j1_harmonic_drive" link2="j3_stepper_motor" reason="Never"/>
+  <disable_collisions link1="j1_stepper_motor" link2="link_2__1_" reason="Never"/>
+  <disable_collisions link1="j1_stepper_motor" link2="j3_harmonic_drive" reason="Never"/>
+  <disable_collisions link1="j1_stepper_motor" link2="j3_stepper_motor" reason="Never"/>
+  <disable_collisions link1="link_1" link2="link_3__1_" reason="Never"/>
+  <disable_collisions link1="j4_harmonic_drive" link2="link_1" reason="Never"/>
+  <disable_collisions link1="j4_stepper_motor" link2="link_1" reason="Never"/>
+  <disable_collisions link1="j2_harmonic_drive" link2="link_3__1_" reason="Never"/>
+  <disable_collisions link1="j2_harmonic_drive" link2="j4_harmonic_drive" reason="Never"/>
+  <disable_collisions link1="j2_harmonic_drive" link2="j4_stepper_motor" reason="Never"/>
+  <disable_collisions link1="j2_stepper_motor" link2="link_3__1_" reason="Never"/>
+  <disable_collisions link1="j2_stepper_motor" link2="j4_harmonic_drive" reason="Never"/>
+  <disable_collisions link1="j2_stepper_motor" link2="j4_stepper_motor" reason="Never"/>
+  <disable_collisions link1="link_2__1_" link2="link_4__1_" reason="Never"/>
+  <disable_collisions link1="j5_harmonic_drive" link2="link_2__1_" reason="Never"/>
+  <disable_collisions link1="j5_stepper_motor" link2="link_2__1_" reason="Never"/>
+  <disable_collisions link1="j3_harmonic_drive" link2="link_4__1_" reason="Never"/>
+  <disable_collisions link1="j3_harmonic_drive" link2="j5_harmonic_drive" reason="Never"/>
+  <disable_collisions link1="j3_harmonic_drive" link2="j5_stepper_motor" reason="Never"/>
+  <disable_collisions link1="j3_stepper_motor" link2="link_4__1_" reason="Never"/>
+  <disable_collisions link1="j3_stepper_motor" link2="j5_harmonic_drive" reason="Never"/>
+  <disable_collisions link1="j3_stepper_motor" link2="j5_stepper_motor" reason="Never"/>
+  <disable_collisions link1="link_3__1_" link2="link_5__1_" reason="Never"/>
+  <disable_collisions link1="j6_harmonic_drive" link2="link_3__1_" reason="Never"/>
+  <disable_collisions link1="j6_stepper_motor" link2="link_3__1_" reason="Never"/>
+  <disable_collisions link1="j4_harmonic_drive" link2="link_5__1_" reason="Never"/>
+  <disable_collisions link1="j4_harmonic_drive" link2="j6_harmonic_drive" reason="Never"/>
+  <disable_collisions link1="j4_harmonic_drive" link2="j6_stepper_motor" reason="Never"/>
+  <disable_collisions link1="j4_stepper_motor" link2="link_5__1_" reason="Never"/>
+  <disable_collisions link1="j4_stepper_motor" link2="j6_harmonic_drive" reason="Never"/>
+  <disable_collisions link1="j4_stepper_motor" link2="j6_stepper_motor" reason="Never"/>
+  <disable_collisions link1="gripper_base_link" link2="gripper_left_finger" reason="Adjacent"/>
+  <disable_collisions link1="gripper_base_link" link2="gripper_right_finger" reason="Adjacent"/>
+  <disable_collisions link1="gripper_left_finger" link2="gripper_right_finger" reason="Never"/>
+  <disable_collisions link1="gripper_base_link" link2="j4_harmonic_drive" reason="Never"/>
+  <disable_collisions link1="gripper_base_link" link2="j4_stepper_motor" reason="Never"/>
+  <disable_collisions link1="gripper_base_link" link2="j5_harmonic_drive" reason="Adjacent"/>
+  <disable_collisions link1="gripper_base_link" link2="j5_stepper_motor" reason="Never"/>
+  <disable_collisions link1="gripper_base_link" link2="j6_harmonic_drive" reason="Adjacent"/>
+  <disable_collisions link1="gripper_base_link" link2="j6_stepper_motor" reason="Adjacent"/>
+  <disable_collisions link1="gripper_base_link" link2="link_3__1_" reason="Never"/>
+  <disable_collisions link1="gripper_base_link" link2="link_4__1_" reason="Never"/>
+  <disable_collisions link1="gripper_base_link" link2="link_5__1_" reason="Adjacent"/>
+  <disable_collisions link1="gripper_left_finger" link2="j4_harmonic_drive" reason="Never"/>
+  <disable_collisions link1="gripper_left_finger" link2="j4_stepper_motor" reason="Never"/>
+  <disable_collisions link1="gripper_left_finger" link2="j5_harmonic_drive" reason="Never"/>
+  <disable_collisions link1="gripper_left_finger" link2="j5_stepper_motor" reason="Never"/>
+  <disable_collisions link1="gripper_left_finger" link2="j6_harmonic_drive" reason="Adjacent"/>
+  <disable_collisions link1="gripper_left_finger" link2="j6_stepper_motor" reason="Never"/>
+  <disable_collisions link1="gripper_left_finger" link2="link_3__1_" reason="Never"/>
+  <disable_collisions link1="gripper_left_finger" link2="link_4__1_" reason="Never"/>
+  <disable_collisions link1="gripper_left_finger" link2="link_5__1_" reason="Never"/>
+  <disable_collisions link1="gripper_right_finger" link2="j4_harmonic_drive" reason="Never"/>
+  <disable_collisions link1="gripper_right_finger" link2="j4_stepper_motor" reason="Never"/>
+  <disable_collisions link1="gripper_right_finger" link2="j5_harmonic_drive" reason="Never"/>
+  <disable_collisions link1="gripper_right_finger" link2="j5_stepper_motor" reason="Never"/>
+  <disable_collisions link1="gripper_right_finger" link2="j6_harmonic_drive" reason="Adjacent"/>
+  <disable_collisions link1="gripper_right_finger" link2="j6_stepper_motor" reason="Never"/>
+  <disable_collisions link1="gripper_right_finger" link2="link_3__1_" reason="Never"/>
+  <disable_collisions link1="gripper_right_finger" link2="link_4__1_" reason="Never"/>
+  <disable_collisions link1="gripper_right_finger" link2="link_5__1_" reason="Never"/>
+</robot>

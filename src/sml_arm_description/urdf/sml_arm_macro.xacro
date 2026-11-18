@@ -1,0 +1,1017 @@
+<?xml version="1.0"?>
+<robot xmlns:xacro="http://www.ros.org/wiki/xacro">
+
+  <!-- Imported from arm_assembly_2.urdf (Onshape) with simplified collision meshes from ARM_collision -->
+  <xacro:macro name="sml_arm_description" params="prefix:='' parent:='world' fast_visual:=false">
+
+    <!-- Base attachment so base_link bottom (Z=-0.15m) rests on ground plane and J1 is centered at (0,0) -->
+    <joint name="${prefix}base_joint" type="fixed">
+      <parent link="${parent}"/>
+      <child link="${prefix}base_link"/>
+      <origin xyz="0.204085 0 0.15" rpy="0 0 0"/>
+    </joint>
+
+    <link name="${prefix}base_link">
+      <inertial>
+        <mass value="1.2296"/>
+        <origin xyz="-0.202665 -0.000929559 -0.0711829" rpy="0 -0 0"/>
+        <inertia ixx="0.00688733" ixy="8.43531e-05" ixz="-0.000148533" iyy="0.00670358" iyz="9.82478e-05" izz="0.00574052"/>
+      </inertial>
+      <xacro:unless value="${fast_visual}">
+        <visual>
+          <origin xyz="0 0 0" rpy="0 -0 0"/>
+          <geometry>
+            <mesh filename="package://sml_arm_description/meshes/visual/base_link.stl" scale="1 1 1"/>
+          </geometry>
+          <material name="0.768627_0.886275_0.952941_0.000000_0.000000">
+            <color rgba="0.768627 0.886275 0.952941 1"/>
+          </material>
+        </visual>
+      </xacro:unless>
+      <xacro:if value="${fast_visual}">
+        <visual>
+          <origin xyz="0 0 0" rpy="0 0 0"/>
+          <geometry>
+            <mesh filename="package://sml_arm_description/meshes/collision/base_link.stl" scale="1 1 1"/>
+          </geometry>
+          <material name="0.768627_0.886275_0.952941_0.000000_0.000000">
+            <color rgba="0.768627 0.886275 0.952941 1"/>
+          </material>
+        </visual>
+      </xacro:if>
+      <collision>
+        <origin xyz="0 0 0" rpy="0 0 0"/>
+        <geometry>
+          <mesh filename="package://sml_arm_description/meshes/collision/base_link.stl" scale="1 1 1"/>
+        </geometry>
+      </collision>
+    </link>
+
+    <link name="${prefix}j1_harmonic_drive">
+      <inertial>
+        <mass value="0.418131"/>
+        <origin xyz="8.32667e-17 -1.96452e-19 0.0162811" rpy="0 -0 0"/>
+        <inertia ixx="0.000219747" ixy="0" ixz="0" iyy="0.000219747" iyz="0" izz="0.000343255"/>
+      </inertial>
+      <xacro:unless value="${fast_visual}">
+        <visual>
+          <origin xyz="0.204085 -2.25688e-15 -0.005" rpy="0 -0 0"/>
+          <geometry>
+            <mesh filename="package://sml_arm_description/meshes/visual/J1_harmonic_drive.stl" scale="1 1 1"/>
+          </geometry>
+          <material name="0.901961_0.901961_0.901961_0.000000_0.000000">
+            <color rgba="0.901961 0.901961 0.901961 1"/>
+          </material>
+        </visual>
+      </xacro:unless>
+      <xacro:if value="${fast_visual}">
+        <visual>
+          <origin xyz="0.204085 -2.25688e-15 -0.005" rpy="0 0 0"/>
+          <geometry>
+            <mesh filename="package://sml_arm_description/meshes/collision/J1_harmonic_drive.stl" scale="1 1 1"/>
+          </geometry>
+          <material name="0.901961_0.901961_0.901961_0.000000_0.000000">
+            <color rgba="0.901961 0.901961 0.901961 1"/>
+          </material>
+        </visual>
+      </xacro:if>
+      <collision>
+        <origin xyz="0.204085 -2.25688e-15 -0.005" rpy="0 0 0"/>
+        <geometry>
+          <mesh filename="package://sml_arm_description/meshes/collision/J1_harmonic_drive.stl" scale="1 1 1"/>
+        </geometry>
+      </collision>
+    </link>
+
+    <link name="${prefix}j1_stepper_motor">
+      <inertial>
+        <mass value="0.62096"/>
+        <origin xyz="1.11022e-16 -3.46279e-05 -0.039204" rpy="0 -0 0"/>
+        <inertia ixx="0.000490544" ixy="0" ixz="0" iyy="0.000489884" iyz="-7.29589e-07" izz="0.000281045"/>
+      </inertial>
+      <xacro:unless value="${fast_visual}">
+        <visual>
+          <origin xyz="0.204085 -2.2482e-15 0.015" rpy="0 -0 0"/>
+          <geometry>
+            <mesh filename="package://sml_arm_description/meshes/visual/J1_stepper_motor.stl" scale="1 1 1"/>
+          </geometry>
+          <material name="0.231373_0.380392_0.705882_0.000000_0.000000">
+            <color rgba="0.231373 0.380392 0.705882 1"/>
+          </material>
+        </visual>
+      </xacro:unless>
+      <xacro:if value="${fast_visual}">
+        <visual>
+          <origin xyz="0.204085 -2.2482e-15 0.015" rpy="0 0 0"/>
+          <geometry>
+            <mesh filename="package://sml_arm_description/meshes/collision/J1_stepper_motor.stl" scale="1 1 1"/>
+          </geometry>
+          <material name="0.231373_0.380392_0.705882_0.000000_0.000000">
+            <color rgba="0.231373 0.380392 0.705882 1"/>
+          </material>
+        </visual>
+      </xacro:if>
+      <collision>
+        <origin xyz="0.204085 -2.2482e-15 0.015" rpy="0 0 0"/>
+        <geometry>
+          <mesh filename="package://sml_arm_description/meshes/collision/J1_stepper_motor.stl" scale="1 1 1"/>
+        </geometry>
+      </collision>
+    </link>
+
+    <link name="${prefix}j2_harmonic_drive">
+      <inertial>
+        <mass value="0.418131"/>
+        <origin xyz="0.0162811 3.99667e-19 1.11022e-16" rpy="0 -0 0"/>
+        <inertia ixx="0.000343255" ixy="0" ixz="0" iyy="0.000219747" iyz="0" izz="0.000219747"/>
+      </inertial>
+      <xacro:unless value="${fast_visual}">
+        <visual>
+          <origin xyz="0.211939 -1.51725e-07 -0.1695" rpy="0 -0 0"/>
+          <geometry>
+            <mesh filename="package://sml_arm_description/meshes/visual/J2_harmonic_drive.stl" scale="1 1 1"/>
+          </geometry>
+          <material name="0.901961_0.901961_0.901961_0.000000_0.000000">
+            <color rgba="0.901961 0.901961 0.901961 1"/>
+          </material>
+        </visual>
+      </xacro:unless>
+      <xacro:if value="${fast_visual}">
+        <visual>
+          <origin xyz="0.211939 -1.51725e-07 -0.1695" rpy="0 0 0"/>
+          <geometry>
+            <mesh filename="package://sml_arm_description/meshes/collision/J2_harmonic_drive.stl" scale="1 1 1"/>
+          </geometry>
+          <material name="0.901961_0.901961_0.901961_0.000000_0.000000">
+            <color rgba="0.901961 0.901961 0.901961 1"/>
+          </material>
+        </visual>
+      </xacro:if>
+      <collision>
+        <origin xyz="0.211939 -1.51725e-07 -0.1695" rpy="0 0 0"/>
+        <geometry>
+          <mesh filename="package://sml_arm_description/meshes/collision/J2_harmonic_drive.stl" scale="1 1 1"/>
+        </geometry>
+      </collision>
+    </link>
+
+    <link name="${prefix}j2_stepper_motor">
+      <inertial>
+        <mass value="0.62096"/>
+        <origin xyz="-0.039204 -2.54119e-17 -3.46279e-05" rpy="0 -0 0"/>
+        <inertia ixx="0.000281045" ixy="0" ixz="-7.29589e-07" iyy="0.000490544" iyz="0" izz="0.000489884"/>
+      </inertial>
+      <xacro:unless value="${fast_visual}">
+        <visual>
+          <origin xyz="0.231939 -1.51725e-07 -0.1695" rpy="0 -0 0"/>
+          <geometry>
+            <mesh filename="package://sml_arm_description/meshes/visual/J2_stepper_motor.stl" scale="1 1 1"/>
+          </geometry>
+          <material name="0.231373_0.380392_0.705882_0.000000_0.000000">
+            <color rgba="0.231373 0.380392 0.705882 1"/>
+          </material>
+        </visual>
+      </xacro:unless>
+      <xacro:if value="${fast_visual}">
+        <visual>
+          <origin xyz="0.231939 -1.51725e-07 -0.1695" rpy="0 0 0"/>
+          <geometry>
+            <mesh filename="package://sml_arm_description/meshes/collision/J2_stepper_motor.stl" scale="1 1 1"/>
+          </geometry>
+          <material name="0.231373_0.380392_0.705882_0.000000_0.000000">
+            <color rgba="0.231373 0.380392 0.705882 1"/>
+          </material>
+        </visual>
+      </xacro:if>
+      <collision>
+        <origin xyz="0.231939 -1.51725e-07 -0.1695" rpy="0 0 0"/>
+        <geometry>
+          <mesh filename="package://sml_arm_description/meshes/collision/J2_stepper_motor.stl" scale="1 1 1"/>
+        </geometry>
+      </collision>
+    </link>
+
+    <link name="${prefix}j3_harmonic_drive">
+      <inertial>
+        <mass value="0.421228"/>
+        <origin xyz="-0.0162811 -1.35605e-18 5.55112e-17" rpy="0 -0 0"/>
+        <inertia ixx="0.000345798" ixy="0" ixz="0" iyy="0.000221375" iyz="0" izz="0.000221375"/>
+      </inertial>
+      <xacro:unless value="${fast_visual}">
+        <visual>
+          <origin xyz="0.128886 3.47551e-07 -0.419308" rpy="0 -0 0"/>
+          <geometry>
+            <mesh filename="package://sml_arm_description/meshes/visual/J3_harmonic_drive.stl" scale="1 1 1"/>
+          </geometry>
+          <material name="0.901961_0.901961_0.901961_0.000000_0.000000">
+            <color rgba="0.901961 0.901961 0.901961 1"/>
+          </material>
+        </visual>
+      </xacro:unless>
+      <xacro:if value="${fast_visual}">
+        <visual>
+          <origin xyz="0.128886 3.47551e-07 -0.419308" rpy="0 0 0"/>
+          <geometry>
+            <mesh filename="package://sml_arm_description/meshes/collision/J3_harmonic_drive.stl" scale="1 1 1"/>
+          </geometry>
+          <material name="0.901961_0.901961_0.901961_0.000000_0.000000">
+            <color rgba="0.901961 0.901961 0.901961 1"/>
+          </material>
+        </visual>
+      </xacro:if>
+      <collision>
+        <origin xyz="0.128886 3.47551e-07 -0.419308" rpy="0 0 0"/>
+        <geometry>
+          <mesh filename="package://sml_arm_description/meshes/collision/J3_harmonic_drive.stl" scale="1 1 1"/>
+        </geometry>
+      </collision>
+    </link>
+
+    <link name="${prefix}j3_stepper_motor">
+      <inertial>
+        <mass value="0.436171"/>
+        <origin xyz="-0.0270441 -0.000849058 1.66533e-16" rpy="0 -0 0"/>
+        <inertia ixx="0.000204616" ixy="-6.79981e-06" ixz="0" iyy="0.000212857" iyz="0" izz="0.000223927"/>
+      </inertial>
+      <xacro:unless value="${fast_visual}">
+        <visual>
+          <origin xyz="0.133886 3.47551e-07 -0.273308" rpy="0 -0 0"/>
+          <geometry>
+            <mesh filename="package://sml_arm_description/meshes/visual/J3_stepper_motor.stl" scale="1 1 1"/>
+          </geometry>
+          <material name="0.972549_0.529412_0.003922_0.000000_0.000000">
+            <color rgba="0.972549 0.529412 0.00392157 1"/>
+          </material>
+        </visual>
+      </xacro:unless>
+      <xacro:if value="${fast_visual}">
+        <visual>
+          <origin xyz="0.133886 3.47551e-07 -0.273308" rpy="0 0 0"/>
+          <geometry>
+            <mesh filename="package://sml_arm_description/meshes/collision/J3_stepper_motor.stl" scale="1 1 1"/>
+          </geometry>
+          <material name="0.972549_0.529412_0.003922_0.000000_0.000000">
+            <color rgba="0.972549 0.529412 0.00392157 1"/>
+          </material>
+        </visual>
+      </xacro:if>
+      <collision>
+        <origin xyz="0.133886 3.47551e-07 -0.273308" rpy="0 0 0"/>
+        <geometry>
+          <mesh filename="package://sml_arm_description/meshes/collision/J3_stepper_motor.stl" scale="1 1 1"/>
+        </geometry>
+      </collision>
+    </link>
+
+    <link name="${prefix}j4_harmonic_drive">
+      <inertial>
+        <mass value="0.184926"/>
+        <origin xyz="-8.32667e-17 5.06118e-06 -0.0246905" rpy="0 -0 0"/>
+        <inertia ixx="6.76767e-05" ixy="0" ixz="0" iyy="6.76802e-05" iyz="-2.02372e-08" izz="3.50122e-05"/>
+      </inertial>
+      <xacro:unless value="${fast_visual}">
+        <visual>
+          <origin xyz="0.204086 3.47551e-07 -0.454308" rpy="0 -0 0"/>
+          <geometry>
+            <mesh filename="package://sml_arm_description/meshes/visual/J4_harmonic_drive.stl" scale="1 1 1"/>
+          </geometry>
+          <material name="0.231373_0.380392_0.705882_0.000000_0.000000">
+            <color rgba="0.231373 0.380392 0.705882 1"/>
+          </material>
+        </visual>
+      </xacro:unless>
+      <xacro:if value="${fast_visual}">
+        <visual>
+          <origin xyz="0.204086 3.47551e-07 -0.454308" rpy="0 0 0"/>
+          <geometry>
+            <mesh filename="package://sml_arm_description/meshes/collision/J4_harmonic_drive.stl" scale="1 1 1"/>
+          </geometry>
+          <material name="0.231373_0.380392_0.705882_0.000000_0.000000">
+            <color rgba="0.231373 0.380392 0.705882 1"/>
+          </material>
+        </visual>
+      </xacro:if>
+      <collision>
+        <origin xyz="0.204086 3.47551e-07 -0.454308" rpy="0 0 0"/>
+        <geometry>
+          <mesh filename="package://sml_arm_description/meshes/collision/J4_harmonic_drive.stl" scale="1 1 1"/>
+        </geometry>
+      </collision>
+    </link>
+
+    <link name="${prefix}j4_stepper_motor">
+      <inertial>
+        <mass value="0.199319"/>
+        <origin xyz="-0.000113261 -4.17196e-06 -0.0211738" rpy="0 -0 0"/>
+        <inertia ixx="5.97797e-05" ixy="-1.2341e-08" ixz="-4.40485e-07" iyy="6.03003e-05" iyz="6.39904e-10" izz="5.55981e-05"/>
+      </inertial>
+      <xacro:unless value="${fast_visual}">
+        <visual>
+          <origin xyz="0.204086 3.47551e-07 -0.359308" rpy="0 -0 0"/>
+          <geometry>
+            <mesh filename="package://sml_arm_description/meshes/visual/J4_stepper_motor.stl" scale="1 1 1"/>
+          </geometry>
+          <material name="0.996078_0.992157_0.956863_0.000000_0.000000">
+            <color rgba="0.996078 0.992157 0.956863 1"/>
+          </material>
+        </visual>
+      </xacro:unless>
+      <xacro:if value="${fast_visual}">
+        <visual>
+          <origin xyz="0.204086 3.47551e-07 -0.359308" rpy="0 0 0"/>
+          <geometry>
+            <mesh filename="package://sml_arm_description/meshes/collision/J4_stepper_motor.stl" scale="1 1 1"/>
+          </geometry>
+          <material name="0.996078_0.992157_0.956863_0.000000_0.000000">
+            <color rgba="0.996078 0.992157 0.956863 1"/>
+          </material>
+        </visual>
+      </xacro:if>
+      <collision>
+        <origin xyz="0.204086 3.47551e-07 -0.359308" rpy="0 0 0"/>
+        <geometry>
+          <mesh filename="package://sml_arm_description/meshes/collision/J4_stepper_motor.stl" scale="1 1 1"/>
+        </geometry>
+      </collision>
+    </link>
+
+    <link name="${prefix}j5_harmonic_drive">
+      <inertial>
+        <mass value="0.224423"/>
+        <origin xyz="0.00745243 0.0281458 -0.01625" rpy="0 -0 0"/>
+        <inertia ixx="0.000106714" ixy="0" ixz="0" iyy="7.40826e-05" iyz="0" izz="7.40826e-05"/>
+      </inertial>
+      <xacro:unless value="${fast_visual}">
+        <visual>
+          <origin xyz="0.241886 0.0281364 -0.726558" rpy="0 -0 0"/>
+          <geometry>
+            <mesh filename="package://sml_arm_description/meshes/visual/J5_harmonic_drive.stl" scale="1 1 1"/>
+          </geometry>
+          <material name="0.972549_0.529412_0.003922_0.000000_0.000000">
+            <color rgba="0.972549 0.529412 0.00392157 1"/>
+          </material>
+        </visual>
+      </xacro:unless>
+      <xacro:if value="${fast_visual}">
+        <visual>
+          <origin xyz="0.241886 0.0281364 -0.726558" rpy="0 0 0"/>
+          <geometry>
+            <mesh filename="package://sml_arm_description/meshes/collision/J5_harmonic_drive.stl" scale="1 1 1"/>
+          </geometry>
+          <material name="0.972549_0.529412_0.003922_0.000000_0.000000">
+            <color rgba="0.972549 0.529412 0.00392157 1"/>
+          </material>
+        </visual>
+      </xacro:if>
+      <collision>
+        <origin xyz="0.241886 0.0281364 -0.726558" rpy="0 0 0"/>
+        <geometry>
+          <mesh filename="package://sml_arm_description/meshes/collision/J5_harmonic_drive.stl" scale="1 1 1"/>
+        </geometry>
+      </collision>
+    </link>
+
+    <link name="${prefix}j5_stepper_motor">
+      <inertial>
+        <mass value="0.199721"/>
+        <origin xyz="0.0210848 -4.16356e-06 -0.000112789" rpy="0 -0 0"/>
+        <inertia ixx="5.55994e-05" ixy="-5.65962e-10" ixz="4.44635e-07" iyy="6.1086e-05" iyz="-1.23414e-08" izz="6.05654e-05"/>
+      </inertial>
+      <xacro:unless value="${fast_visual}">
+        <visual>
+          <origin xyz="0.232886 -9.38583e-06 -0.579858" rpy="0 -0 0"/>
+          <geometry>
+            <mesh filename="package://sml_arm_description/meshes/visual/J5_stepper_motor.stl" scale="1 1 1"/>
+          </geometry>
+          <material name="0.996078_0.992157_0.956863_0.000000_0.000000">
+            <color rgba="0.996078 0.992157 0.956863 1"/>
+          </material>
+        </visual>
+      </xacro:unless>
+      <xacro:if value="${fast_visual}">
+        <visual>
+          <origin xyz="0.232886 -9.38583e-06 -0.579858" rpy="0 0 0"/>
+          <geometry>
+            <mesh filename="package://sml_arm_description/meshes/collision/J5_stepper_motor.stl" scale="1 1 1"/>
+          </geometry>
+          <material name="0.996078_0.992157_0.956863_0.000000_0.000000">
+            <color rgba="0.996078 0.992157 0.956863 1"/>
+          </material>
+        </visual>
+      </xacro:if>
+      <collision>
+        <origin xyz="0.232886 -9.38583e-06 -0.579858" rpy="0 0 0"/>
+        <geometry>
+          <mesh filename="package://sml_arm_description/meshes/collision/J5_stepper_motor.stl" scale="1 1 1"/>
+        </geometry>
+      </collision>
+    </link>
+
+    <link name="${prefix}j6_harmonic_drive">
+      <inertial>
+        <mass value="0.224423"/>
+        <origin xyz="1.94289e-16 -1.999e-19 0.0144524" rpy="0 -0 0"/>
+        <inertia ixx="7.40826e-05" ixy="0" ixz="0" iyy="7.40826e-05" iyz="0" izz="0.000106714"/>
+      </inertial>
+      <xacro:unless value="${fast_visual}">
+        <visual>
+          <origin xyz="0.204086 -9.38583e-06 -0.821308" rpy="0 -0 0"/>
+          <geometry>
+            <mesh filename="package://sml_arm_description/meshes/visual/J6_harmonic_drive.stl" scale="1 1 1"/>
+          </geometry>
+          <material name="0.972549_0.529412_0.003922_0.000000_0.000000">
+            <color rgba="0.972549 0.529412 0.00392157 1"/>
+          </material>
+        </visual>
+      </xacro:unless>
+      <xacro:if value="${fast_visual}">
+        <visual>
+          <origin xyz="0.204086 -9.38583e-06 -0.821308" rpy="0 0 0"/>
+          <geometry>
+            <mesh filename="package://sml_arm_description/meshes/collision/J6_harmonic_drive.stl" scale="1 1 1"/>
+          </geometry>
+          <material name="0.972549_0.529412_0.003922_0.000000_0.000000">
+            <color rgba="0.972549 0.529412 0.00392157 1"/>
+          </material>
+        </visual>
+      </xacro:if>
+      <collision>
+        <origin xyz="0.204086 -9.38583e-06 -0.821308" rpy="0 0 0"/>
+        <geometry>
+          <mesh filename="package://sml_arm_description/meshes/collision/J6_harmonic_drive.stl" scale="1 1 1"/>
+        </geometry>
+      </collision>
+    </link>
+
+    <link name="${prefix}j6_stepper_motor">
+      <inertial>
+        <mass value="0.199319"/>
+        <origin xyz="4.17196e-06 -0.000113261 -0.0211738" rpy="0 -0 0"/>
+        <inertia ixx="6.03003e-05" ixy="1.2341e-08" ixz="-6.39904e-10" iyy="5.97797e-05" iyz="-4.40485e-07" izz="5.55981e-05"/>
+      </inertial>
+      <xacro:unless value="${fast_visual}">
+        <visual>
+          <origin xyz="0.204086 0.000111497 -0.794308" rpy="0 -0 0"/>
+          <geometry>
+            <mesh filename="package://sml_arm_description/meshes/visual/J6_stepper_motor.stl" scale="1 1 1"/>
+          </geometry>
+          <material name="0.996078_0.992157_0.956863_0.000000_0.000000">
+            <color rgba="0.996078 0.992157 0.956863 1"/>
+          </material>
+        </visual>
+      </xacro:unless>
+      <xacro:if value="${fast_visual}">
+        <visual>
+          <origin xyz="0.204086 0.000111497 -0.794308" rpy="0 0 0"/>
+          <geometry>
+            <mesh filename="package://sml_arm_description/meshes/collision/J6_stepper_motor.stl" scale="1 1 1"/>
+          </geometry>
+          <material name="0.996078_0.992157_0.956863_0.000000_0.000000">
+            <color rgba="0.996078 0.992157 0.956863 1"/>
+          </material>
+        </visual>
+      </xacro:if>
+      <collision>
+        <origin xyz="0.204086 0.000111497 -0.794308" rpy="0 0 0"/>
+        <geometry>
+          <mesh filename="package://sml_arm_description/meshes/collision/J6_stepper_motor.stl" scale="1 1 1"/>
+        </geometry>
+      </collision>
+    </link>
+
+    <link name="${prefix}link_1">
+      <inertial>
+        <mass value="0.915584"/>
+        <origin xyz="-0.00842423 0.00218104 0.0412617" rpy="0 -0 0"/>
+        <inertia ixx="0.00255873" ixy="1.28616e-06" ixz="0.00016891" iyy="0.00268788" iyz="0.000105013" izz="0.00241924"/>
+      </inertial>
+      <xacro:unless value="${fast_visual}">
+        <visual>
+          <origin xyz="0.204085 -2.25688e-15 -0.043" rpy="0 -0 0"/>
+          <geometry>
+            <mesh filename="package://sml_arm_description/meshes/visual/Link_1.stl" scale="1 1 1"/>
+          </geometry>
+          <material name="0.231373_0.380392_0.705882_0.000000_0.000000">
+            <color rgba="0.231373 0.380392 0.705882 1"/>
+          </material>
+        </visual>
+      </xacro:unless>
+      <xacro:if value="${fast_visual}">
+        <visual>
+          <origin xyz="0.204085 -2.25688e-15 -0.043" rpy="0 0 0"/>
+          <geometry>
+            <mesh filename="package://sml_arm_description/meshes/collision/Link_1.stl" scale="1 1 1"/>
+          </geometry>
+          <material name="0.231373_0.380392_0.705882_0.000000_0.000000">
+            <color rgba="0.231373 0.380392 0.705882 1"/>
+          </material>
+        </visual>
+      </xacro:if>
+      <collision>
+        <origin xyz="0.204085 -2.25688e-15 -0.043" rpy="0 0 0"/>
+        <geometry>
+          <mesh filename="package://sml_arm_description/meshes/collision/Link_1.stl" scale="1 1 1"/>
+        </geometry>
+      </collision>
+    </link>
+
+    <link name="${prefix}link_2__1_">
+      <inertial>
+        <mass value="0.000753763"/>
+        <origin xyz="0.0269027 3.10086e-06 0.121509" rpy="0 -0 0"/>
+        <inertia ixx="1.28817e-05" ixy="4.13539e-11" ixz="-5.19652e-07" iyy="1.16132e-05" iyz="3.62503e-10" izz="1.54843e-06"/>
+      </inertial>
+      <xacro:unless value="${fast_visual}">
+        <visual>
+          <origin xyz="-0.0760609 -1.51725e-07 -0.1695" rpy="0 -0 0"/>
+          <geometry>
+            <mesh filename="package://sml_arm_description/meshes/visual/_.stl" scale="1 1 1"/>
+          </geometry>
+          <material name="0.910000_0.910000_0.910000_0.000000_0.000000">
+            <color rgba="0.91 0.91 0.91 1"/>
+          </material>
+        </visual>
+        <visual>
+          <origin xyz="-0.0760609 -1.51725e-07 -0.1695" rpy="0 -0 0"/>
+          <geometry>
+            <mesh filename="package://sml_arm_description/meshes/visual/__1.stl" scale="1 1 1"/>
+          </geometry>
+          <material name="0.910000_0.910000_0.910000_0.000000_0.000000">
+            <color rgba="0.91 0.91 0.91 1"/>
+          </material>
+        </visual>
+        <visual>
+          <origin xyz="-0.0760609 -1.51725e-07 -0.1695" rpy="0 -0 0"/>
+          <geometry>
+            <mesh filename="package://sml_arm_description/meshes/visual/__2.stl" scale="1 1 1"/>
+          </geometry>
+          <material name="0.910000_0.910000_0.910000_0.000000_0.000000">
+            <color rgba="0.91 0.91 0.91 1"/>
+          </material>
+        </visual>
+        <visual>
+          <origin xyz="-0.0760609 -1.51725e-07 -0.1695" rpy="0 -0 0"/>
+          <geometry>
+            <mesh filename="package://sml_arm_description/meshes/visual/__3.stl" scale="1 1 1"/>
+          </geometry>
+          <material name="0.910000_0.910000_0.910000_0.000000_0.000000">
+            <color rgba="0.91 0.91 0.91 1"/>
+          </material>
+        </visual>
+        <visual>
+          <origin xyz="-0.0760609 -1.51725e-07 -0.1695" rpy="0 -0 0"/>
+          <geometry>
+            <mesh filename="package://sml_arm_description/meshes/visual/__4.stl" scale="1 1 1"/>
+          </geometry>
+          <material name="0.910000_0.910000_0.910000_0.000000_0.000000">
+            <color rgba="0.91 0.91 0.91 1"/>
+          </material>
+        </visual>
+      </xacro:unless>
+      <xacro:if value="${fast_visual}">
+        <visual>
+          <origin xyz="0.173939 -1.51725e-07 -0.1695" rpy="0 0 0"/>
+          <geometry>
+            <mesh filename="package://sml_arm_description/meshes/collision/Link_2.stl" scale="1 1 1"/>
+          </geometry>
+          <material name="0.910000_0.910000_0.910000_0.000000_0.000000">
+            <color rgba="0.91 0.91 0.91 1"/>
+          </material>
+        </visual>
+      </xacro:if>
+      <collision>
+        <origin xyz="0.173939 -1.51725e-07 -0.1695" rpy="0 0 0"/>
+        <geometry>
+          <mesh filename="package://sml_arm_description/meshes/collision/Link_2.stl" scale="1 1 1"/>
+        </geometry>
+      </collision>
+    </link>
+
+    <link name="${prefix}link_3__1_">
+      <inertial>
+        <mass value="0.000624869"/>
+        <origin xyz="-0.0299137 -2.71824e-05 0.0174805" rpy="0 -0 0"/>
+        <inertia ixx="2.35456e-06" ixy="5.69021e-11" ixz="2.4373e-08" iyy="2.05757e-06" iyz="1.45188e-09" izz="8.4546e-07"/>
+      </inertial>
+      <xacro:unless value="${fast_visual}">
+        <visual>
+          <origin xyz="0.419886 3.47551e-07 -0.419308" rpy="0 -0 0"/>
+          <geometry>
+            <mesh filename="package://sml_arm_description/meshes/visual/__5.stl" scale="1 1 1"/>
+          </geometry>
+          <material name="0.910000_0.910000_0.910000_0.000000_0.000000">
+            <color rgba="0.91 0.91 0.91 1"/>
+          </material>
+        </visual>
+        <visual>
+          <origin xyz="0.419886 3.47551e-07 -0.419308" rpy="0 -0 0"/>
+          <geometry>
+            <mesh filename="package://sml_arm_description/meshes/visual/__6.stl" scale="1 1 1"/>
+          </geometry>
+          <material name="0.910000_0.910000_0.910000_0.000000_0.000000">
+            <color rgba="0.91 0.91 0.91 1"/>
+          </material>
+        </visual>
+        <visual>
+          <origin xyz="0.419886 3.47551e-07 -0.419308" rpy="0 -0 0"/>
+          <geometry>
+            <mesh filename="package://sml_arm_description/meshes/visual/__7.stl" scale="1 1 1"/>
+          </geometry>
+          <material name="0.910000_0.910000_0.910000_0.000000_0.000000">
+            <color rgba="0.91 0.91 0.91 1"/>
+          </material>
+        </visual>
+        <visual>
+          <origin xyz="0.419886 3.47551e-07 -0.419308" rpy="0 -0 0"/>
+          <geometry>
+            <mesh filename="package://sml_arm_description/meshes/visual/__8.stl" scale="1 1 1"/>
+          </geometry>
+          <material name="0.910000_0.910000_0.910000_0.000000_0.000000">
+            <color rgba="0.91 0.91 0.91 1"/>
+          </material>
+        </visual>
+      </xacro:unless>
+      <xacro:if value="${fast_visual}">
+        <visual>
+          <origin xyz="0.166886 3.47551e-07 -0.419308" rpy="0 0 0"/>
+          <geometry>
+            <mesh filename="package://sml_arm_description/meshes/collision/Link_3.stl" scale="1 1 1"/>
+          </geometry>
+          <material name="0.910000_0.910000_0.910000_0.000000_0.000000">
+            <color rgba="0.91 0.91 0.91 1"/>
+          </material>
+        </visual>
+      </xacro:if>
+      <collision>
+        <origin xyz="0.166886 3.47551e-07 -0.419308" rpy="0 0 0"/>
+        <geometry>
+          <mesh filename="package://sml_arm_description/meshes/collision/Link_3.stl" scale="1 1 1"/>
+        </geometry>
+      </collision>
+    </link>
+
+    <link name="${prefix}link_4__1_">
+      <inertial>
+        <mass value="0.000418807"/>
+        <origin xyz="-0.00152469 -0.000405617 0.0786794" rpy="0 -0 0"/>
+        <inertia ixx="1.68609e-06" ixy="9.07382e-10" ixz="1.49281e-07" iyy="1.71164e-06" iyz="-7.69868e-09" izz="8.70106e-07"/>
+      </inertial>
+      <xacro:unless value="${fast_visual}">
+        <visual>
+          <origin xyz="0.204086 -9.38583e-06 -0.520308" rpy="0 -0 0"/>
+          <geometry>
+            <mesh filename="package://sml_arm_description/meshes/visual/__13.stl" scale="1 1 1"/>
+          </geometry>
+          <material name="0.910000_0.910000_0.910000_0.000000_0.000000">
+            <color rgba="0.91 0.91 0.91 1"/>
+          </material>
+        </visual>
+        <visual>
+          <origin xyz="0.204086 -9.38583e-06 -0.520308" rpy="0 -0 0"/>
+          <geometry>
+            <mesh filename="package://sml_arm_description/meshes/visual/__14.stl" scale="1 1 1"/>
+          </geometry>
+          <material name="0.910000_0.910000_0.910000_0.000000_0.000000">
+            <color rgba="0.91 0.91 0.91 1"/>
+          </material>
+        </visual>
+      </xacro:unless>
+      <xacro:if value="${fast_visual}">
+        <visual>
+          <origin xyz="0.204086 -9.38583e-06 -0.520308" rpy="0 0 0"/>
+          <geometry>
+            <mesh filename="package://sml_arm_description/meshes/collision/Link_4.stl" scale="1 1 1"/>
+          </geometry>
+          <material name="0.910000_0.910000_0.910000_0.000000_0.000000">
+            <color rgba="0.91 0.91 0.91 1"/>
+          </material>
+        </visual>
+      </xacro:if>
+      <collision>
+        <origin xyz="0.204086 -9.38583e-06 -0.520308" rpy="0 0 0"/>
+        <geometry>
+          <mesh filename="package://sml_arm_description/meshes/collision/Link_4.stl" scale="1 1 1"/>
+        </geometry>
+      </collision>
+    </link>
+
+    <link name="${prefix}link_5__1_">
+      <inertial>
+        <mass value="0.00023358"/>
+        <origin xyz="0.0159858 0.00216438 0.0449918" rpy="0 -0 0"/>
+        <inertia ixx="4.26084e-07" ixy="6.15092e-10" ixz="2.38487e-08" iyy="4.24272e-07" iyz="-5.38815e-09" izz="1.53801e-07"/>
+      </inertial>
+      <xacro:unless value="${fast_visual}">
+        <visual>
+          <origin xyz="0.0808856 -9.38583e-06 -0.710308" rpy="0 -0 0"/>
+          <geometry>
+            <mesh filename="package://sml_arm_description/meshes/visual/__9.stl" scale="1 1 1"/>
+          </geometry>
+          <material name="0.910000_0.910000_0.910000_0.000000_0.000000">
+            <color rgba="0.91 0.91 0.91 1"/>
+          </material>
+        </visual>
+        <visual>
+          <origin xyz="0.0808856 -9.38583e-06 -0.710308" rpy="0 -0 0"/>
+          <geometry>
+            <mesh filename="package://sml_arm_description/meshes/visual/__10.stl" scale="1 1 1"/>
+          </geometry>
+          <material name="0.910000_0.910000_0.910000_0.000000_0.000000">
+            <color rgba="0.91 0.91 0.91 1"/>
+          </material>
+        </visual>
+        <visual>
+          <origin xyz="0.0808856 -9.38583e-06 -0.710308" rpy="0 -0 0"/>
+          <geometry>
+            <mesh filename="package://sml_arm_description/meshes/visual/__11.stl" scale="1 1 1"/>
+          </geometry>
+          <material name="0.910000_0.910000_0.910000_0.000000_0.000000">
+            <color rgba="0.91 0.91 0.91 1"/>
+          </material>
+        </visual>
+        <visual>
+          <origin xyz="0.0808856 -9.38583e-06 -0.710308" rpy="0 -0 0"/>
+          <geometry>
+            <mesh filename="package://sml_arm_description/meshes/visual/__12.stl" scale="1 1 1"/>
+          </geometry>
+          <material name="0.910000_0.910000_0.910000_0.000000_0.000000">
+            <color rgba="0.91 0.91 0.91 1"/>
+          </material>
+        </visual>
+      </xacro:unless>
+      <xacro:if value="${fast_visual}">
+        <visual>
+          <origin xyz="0.214886 -9.38583e-06 -0.710308" rpy="0 0 0"/>
+          <geometry>
+            <mesh filename="package://sml_arm_description/meshes/collision/Link_5.stl" scale="1 1 1"/>
+          </geometry>
+          <material name="0.910000_0.910000_0.910000_0.000000_0.000000">
+            <color rgba="0.91 0.91 0.91 1"/>
+          </material>
+        </visual>
+      </xacro:if>
+      <collision>
+        <origin xyz="0.214886 -9.38583e-06 -0.710308" rpy="0 0 0"/>
+        <geometry>
+          <mesh filename="package://sml_arm_description/meshes/collision/Link_5.stl" scale="1 1 1"/>
+        </geometry>
+      </collision>
+    </link>
+
+    <link name="${prefix}ee_link">
+      <inertial>
+        <mass value="0.01"/>
+        <origin xyz="0 0 0" rpy="0 0 0"/>
+        <inertia ixx="1e-5" ixy="0.0" ixz="0.0" iyy="1e-5" iyz="0.0" izz="1e-5"/>
+      </inertial>
+    </link>
+
+    <joint name="${prefix}dof_joint1" type="revolute">
+      <origin xyz="-3.60822e-16 2.83012e-17 0.038" rpy="4.90454e-45 -7.00649e-46 -6.16298e-32"/>
+      <axis xyz="-0 -0 -1"/>
+      <parent link="${prefix}j1_harmonic_drive"/>
+      <child link="${prefix}link_1"/>
+      <limit lower="-3.14159" upper="3.14159" effort="100.0" velocity="2.5"/>
+      <dynamics damping="0.5" friction="0.1"/>
+    </joint>
+
+    <joint name="${prefix}dof_joint2" type="revolute">
+      <origin xyz="0.038 -1.90582e-17 1.13798e-15" rpy="3.23864e-30 -7.23728e-34 6.12323e-17"/>
+      <axis xyz="-1 -0 -0"/>
+      <parent link="${prefix}j2_harmonic_drive"/>
+      <child link="${prefix}link_2__1_"/>
+      <limit lower="-1.5708" upper="1.5708" effort="100.0" velocity="2.5"/>
+      <dynamics damping="0.5" friction="0.1"/>
+    </joint>
+
+    <joint name="${prefix}dof_joint3" type="revolute">
+      <origin xyz="-0.038 -3.78671e-16 4.10783e-15" rpy="-3.9443e-31 -4.39112e-32 9.24446e-32"/>
+      <axis xyz="1 -0 -0"/>
+      <parent link="${prefix}j3_harmonic_drive"/>
+      <child link="${prefix}link_3__1_"/>
+      <limit lower="-2.35619" upper="2.35619" effort="100.0" velocity="2.5"/>
+      <dynamics damping="0.5" friction="0.1"/>
+    </joint>
+
+    <joint name="${prefix}dof_joint4" type="revolute">
+      <origin xyz="-1.13798e-15 -3.64086e-16 0.066" rpy="-6.93889e-16 -7.8889e-31 -8.40683e-20"/>
+      <axis xyz="-0 2.85712e-16 -1"/>
+      <parent link="${prefix}j4_harmonic_drive"/>
+      <child link="${prefix}link_4__1_"/>
+      <limit lower="-3.14159" upper="3.14159" effort="50.0" velocity="2.5"/>
+      <dynamics damping="0.5" friction="0.1"/>
+    </joint>
+
+    <joint name="${prefix}dof_joint5" type="revolute">
+      <origin xyz="0.027 0.0281458 -0.01625" rpy="6.91342e-18 4.93038e-31 6.16298e-32"/>
+      <axis xyz="-1 -2.77556e-16 -7.93011e-32"/>
+      <parent link="${prefix}j5_harmonic_drive"/>
+      <child link="${prefix}link_5__1_"/>
+      <limit lower="-2.0944" upper="2.0944" effort="50.0" velocity="2.5"/>
+      <dynamics damping="0.5" friction="0.1"/>
+    </joint>
+
+    <joint name="${prefix}fastened_g1_harm" type="fixed">
+      <origin xyz="-0.204085 -1.38787e-17 0.005" rpy="0 -0 0"/>
+      <axis xyz="-0 -0 -1"/>
+      <parent link="${prefix}base_link"/>
+      <child link="${prefix}j1_harmonic_drive"/>
+    </joint>
+
+    <joint name="${prefix}fastened_g1_motor" type="fixed">
+      <origin xyz="-0.204085 2.25576e-15 -0.015" rpy="0 -0 0"/>
+      <axis xyz="-1.22465e-16 -0 1"/>
+      <parent link="${prefix}base_link"/>
+      <child link="${prefix}j1_stepper_motor"/>
+    </joint>
+
+    <joint name="${prefix}fastened_g2_harm" type="fixed">
+      <origin xyz="-0.007854 1.51725e-07 0.1265" rpy="-3.23075e-30 1.38043e-30 -5.52943e-17"/>
+      <axis xyz="-1 -6.12323e-17 -0"/>
+      <parent link="${prefix}link_1"/>
+      <child link="${prefix}j2_harmonic_drive"/>
+    </joint>
+
+    <joint name="${prefix}fastened_g2_motor" type="fixed">
+      <origin xyz="-0.027854 1.51725e-07 0.1265" rpy="-3.15255e-30 1.18329e-30 -6.245e-17"/>
+      <axis xyz="1 6.12323e-17 -0"/>
+      <parent link="${prefix}link_1"/>
+      <child link="${prefix}j2_stepper_motor"/>
+    </joint>
+
+    <joint name="${prefix}fastened_g3_harm" type="fixed">
+      <origin xyz="0.0450535 -4.99275e-07 0.249808" rpy="6.93889e-18 -4.14358e-19 7.089e-16"/>
+      <axis xyz="1 -0 -0"/>
+      <parent link="${prefix}link_2__1_"/>
+      <child link="${prefix}j3_harmonic_drive"/>
+    </joint>
+
+    <joint name="${prefix}fastened_g3_motor" type="fixed">
+      <origin xyz="0.0400535 -4.99275e-07 0.103808" rpy="1.04083e-17 -4.0743e-19 2.57547e-16"/>
+      <axis xyz="1 -0 -0"/>
+      <parent link="${prefix}link_2__1_"/>
+      <child link="${prefix}j3_stepper_motor"/>
+    </joint>
+
+    <joint name="${prefix}fastened_g4_harm" type="fixed">
+      <origin xyz="-0.0372 2.67428e-16 0.035" rpy="2.98372e-16 -3.67266e-17 -1.43108e-16"/>
+      <axis xyz="-0 4.08177e-16 1"/>
+      <parent link="${prefix}link_3__1_"/>
+      <child link="${prefix}j4_harmonic_drive"/>
+    </joint>
+
+    <joint name="${prefix}fastened_g4_motor" type="fixed">
+      <origin xyz="-0.0372 2.89346e-16 -0.06" rpy="3.67761e-16 -1.86399e-16 -5.93062e-17"/>
+      <axis xyz="-0 4.08177e-16 1"/>
+      <parent link="${prefix}link_3__1_"/>
+      <child link="${prefix}j4_stepper_motor"/>
+    </joint>
+
+    <joint name="${prefix}fastened_g5_harm" type="fixed">
+      <origin xyz="-0.0378 -0.0281458 0.20625" rpy="-9.15909e-16 -3.58204e-16 -6.95299e-16"/>
+      <axis xyz="1 2.77556e-16 7.93011e-32"/>
+      <parent link="${prefix}link_4__1_"/>
+      <child link="${prefix}j5_harmonic_drive"/>
+    </joint>
+
+    <joint name="${prefix}fastened_g5_motor" type="fixed">
+      <origin xyz="-0.0288 3.35985e-16 0.05955" rpy="-8.119e-16 -2.61567e-16 1.75044e-16"/>
+      <axis xyz="-1 -2.77556e-16 -7.93011e-32"/>
+      <parent link="${prefix}link_4__1_"/>
+      <child link="${prefix}j5_stepper_motor"/>
+    </joint>
+
+    <joint name="${prefix}fastened_g6_harm" type="fixed">
+      <origin xyz="0.0108 3.4904e-16 0.111" rpy="5.20417e-16 1.6732e-18 4.34587e-16"/>
+      <axis xyz="9.62965e-32 -6.12323e-17 -1"/>
+      <parent link="${prefix}link_5__1_"/>
+      <child link="${prefix}j6_harmonic_drive"/>
+    </joint>
+
+    <joint name="${prefix}fastened_g6_motor" type="fixed">
+      <origin xyz="0.0108 -0.000120883 0.084" rpy="4.78784e-16 2.6592e-16 3.00242e-16"/>
+      <axis xyz="-9.86076e-32 6.12323e-17 1"/>
+      <parent link="${prefix}link_5__1_"/>
+      <child link="${prefix}j6_stepper_motor"/>
+    </joint>
+
+    <joint name="${prefix}dof_joint6" type="revolute">
+      <origin xyz="0 0 0.034" rpy="0 0 0"/>
+      <axis xyz="0 0 -1"/>
+      <parent link="${prefix}j6_harmonic_drive"/>
+      <child link="${prefix}ee_link"/>
+      <limit lower="-3.14159" upper="3.14159" effort="50.0" velocity="3.0"/>
+      <dynamics damping="0.2" friction="0.05"/>
+    </joint>
+
+    <!-- Parallel Gripper End-Effector -->
+    <joint name="${prefix}gripper_base_joint" type="fixed">
+      <origin xyz="0 0 0" rpy="0 0 0"/>
+      <parent link="${prefix}ee_link"/>
+      <child link="${prefix}gripper_base_link"/>
+    </joint>
+
+    <link name="${prefix}gripper_base_link">
+      <inertial>
+        <mass value="0.15"/>
+        <origin xyz="0 0 0.012" rpy="0 0 0"/>
+        <inertia ixx="1.224e-4" ixy="0.0" ixz="0.0" iyy="3.845e-5" iyz="0.0" izz="1.465e-4"/>
+      </inertial>
+      <visual>
+        <origin xyz="0 0 0.012" rpy="0 0 0"/>
+        <geometry>
+          <box size="0.050 0.096 0.024"/>
+        </geometry>
+        <material name="sml_gripper_base_grey">
+          <color rgba="0.20 0.22 0.26 1.0"/>
+        </material>
+      </visual>
+      <collision>
+        <origin xyz="0 0 0.012" rpy="0 0 0"/>
+        <geometry>
+          <box size="0.050 0.096 0.024"/>
+        </geometry>
+      </collision>
+    </link>
+
+    <joint name="${prefix}gripper_left_finger_joint" type="prismatic">
+      <origin xyz="0 0.002 0.024" rpy="0 0 0"/>
+      <axis xyz="0 1 0"/>
+      <parent link="${prefix}gripper_base_link"/>
+      <child link="${prefix}gripper_left_finger"/>
+      <limit lower="0.0" upper="0.040" effort="50.0" velocity="0.5"/>
+      <dynamics damping="1.0" friction="0.2"/>
+    </joint>
+
+    <link name="${prefix}gripper_left_finger">
+      <inertial>
+        <mass value="0.04"/>
+        <origin xyz="0 0.005 0.035" rpy="0 0 0"/>
+        <inertia ixx="1.667e-5" ixy="0.0" ixz="0.0" iyy="1.825e-5" iyz="0.0" izz="2.253e-6"/>
+      </inertial>
+      <visual>
+        <origin xyz="0 0.005 0.035" rpy="0 0 0"/>
+        <geometry>
+          <box size="0.024 0.010 0.070"/>
+        </geometry>
+        <material name="sml_gripper_finger_orange">
+          <color rgba="0.95 0.45 0.12 1.0"/>
+        </material>
+      </visual>
+      <collision>
+        <origin xyz="0 0.005 0.035" rpy="0 0 0"/>
+        <geometry>
+          <box size="0.024 0.010 0.070"/>
+        </geometry>
+      </collision>
+    </link>
+
+    <joint name="${prefix}gripper_right_finger_joint" type="prismatic">
+      <origin xyz="0 -0.002 0.024" rpy="0 0 0"/>
+      <axis xyz="0 -1 0"/>
+      <parent link="${prefix}gripper_base_link"/>
+      <child link="${prefix}gripper_right_finger"/>
+      <limit lower="0.0" upper="0.040" effort="50.0" velocity="0.5"/>
+      <dynamics damping="1.0" friction="0.2"/>
+    </joint>
+
+    <link name="${prefix}gripper_right_finger">
+      <inertial>
+        <mass value="0.04"/>
+        <origin xyz="0 -0.005 0.035" rpy="0 0 0"/>
+        <inertia ixx="1.667e-5" ixy="0.0" ixz="0.0" iyy="1.825e-5" iyz="0.0" izz="2.253e-6"/>
+      </inertial>
+      <visual>
+        <origin xyz="0 -0.005 0.035" rpy="0 0 0"/>
+        <geometry>
+          <box size="0.024 0.010 0.070"/>
+        </geometry>
+        <material name="sml_gripper_finger_orange">
+          <color rgba="0.95 0.45 0.12 1.0"/>
+        </material>
+      </visual>
+      <collision>
+        <origin xyz="0 -0.005 0.035" rpy="0 0 0"/>
+        <geometry>
+          <box size="0.024 0.010 0.070"/>
+        </geometry>
+      </collision>
+    </link>
+
+    <joint name="${prefix}tcp_joint" type="fixed">
+      <origin xyz="0 0 0.065" rpy="0 0 0"/>
+      <parent link="${prefix}gripper_base_link"/>
+      <child link="${prefix}tcp_link"/>
+    </joint>
+
+    <link name="${prefix}tcp_link">
+      <inertial>
+        <mass value="0.001"/>
+        <origin xyz="0 0 0" rpy="0 0 0"/>
+        <inertia ixx="1e-6" ixy="0.0" ixz="0.0" iyy="1e-6" iyz="0.0" izz="1e-6"/>
+      </inertial>
+    </link>
+
+  </xacro:macro>
+
+</robot>

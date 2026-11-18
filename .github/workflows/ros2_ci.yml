@@ -1,0 +1,67 @@
+name: ROS 2 Jazzy CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+
+jobs:
+  build-and-validate:
+    runs-on: ubuntu-24.04
+    container:
+      image: ros:jazzy-ros-base-noble
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Install ROS 2 Jazzy & GUI test dependencies
+        shell: bash
+        run: |
+          set -e
+          apt-get update
+          DEBIAN_FRONTEND=noninteractive apt-get install -y --no-install-recommends \
+            ros-jazzy-xacro \
+            ros-jazzy-joint-state-publisher \
+            ros-jazzy-robot-state-publisher \
+            ros-jazzy-controller-manager \
+            ros-jazzy-joint-trajectory-controller \
+            ros-jazzy-position-controllers \
+            ros-jazzy-joint-state-broadcaster \
+            ros-jazzy-control-msgs \
+            ros-jazzy-trajectory-msgs \
+            ros-jazzy-common-interfaces \
+            ros-jazzy-moveit-msgs \
+            ros-jazzy-moveit-configs-utils \
+            liburdfdom-tools \
+            python3-pyqt5 \
+            python3-numpy \
+            libgl1 \
+            libxkbcommon-x11-0
+          rm -rf /var/lib/apt/lists/*
+
+      - name: Build ROS 2 workspace with colcon
+        shell: bash
+        run: |
+          set -e
+          source /opt/ros/jazzy/setup.bash
+          colcon build --symlink-install
+
+      - name: Validate URDF from Xacro (check_urdf)
+        shell: bash
+        run: |
+          set -e
+          source /opt/ros/jazzy/setup.bash
+          source install/setup.bash
+          xacro src/sml_arm_description/urdf/sml_arm.urdf.xacro use_sim:=true > /tmp/sml_arm_ci.urdf
+          check_urdf /tmp/sml_arm_ci.urdf
+          rm -f /tmp/sml_arm_ci.urdf
+
+      - name: Run Control Studio GUI headless self-test
+        shell: bash
+        run: |
+          set -e
+          source /opt/ros/jazzy/setup.bash
+          source install/setup.bash
+          QT_QPA_PLATFORM=offscreen ros2 run sml_arm_control arm_control_gui.py --self-test

@@ -1,0 +1,55 @@
+# ROS 2 / Colcon build artifacts
+/build/
+/install/
+/log/
+.colcon/
+colcon_build.log
+compile_commands.json
+
+# Python caches & packaging
+__pycache__/
+*.py[cod]
+*$py.class
+*.egg-info/
+.pytest_cache/
+.venv/
+venv/
+
+# C / C++ / CMake / Firmware build artifacts
+CMakeCache.txt
+CMakeFiles/
+CMakeScripts/
+Testing/
+Makefile
+cmake_install.cmake
+install_manifest.txt
+.pio/
+Debug/
+Release/
+*.elf
+*.bin
+*.hex
+*.o
+*.obj
+*.a
+*.so
+*.d
+
+# ECAD / CAD / KiCad temporary & backup files
+*-backups/
+*.kicad_prl
+fp-info-cache
+_autosave-*
+~$*
+*.bak
+*.lck
+*.tmp
+
+# Editor & OS files
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+.DS_Store
+Thumbs.db

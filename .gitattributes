@@ -1,0 +1,20 @@
+# Normalize text files to LF for ROS 2 / Linux / CI consistency
+* text=auto eol=lf
+
+# Shell and script executables
+*.sh text eol=lf
+*.py text eol=lf
+
+# Binary CAD, mesh, documentation, and archive assets
+*.stl binary
+*.step binary
+*.stp binary
+*.iges binary
+*.igs binary
+*.obj binary
+*.dae binary
+*.png binary
+*.jpg binary
+*.jpeg binary
+*.pdf binary
+*.zip binary

@@ -1,0 +1,24 @@
+item_no,category,part_name,urdf_reference,qty,specification_or_material,vendor_or_part_number,status,notes
+1,Structural,Base Pedestal,base_link,1,CNC Aluminum / PETG-CF (TBD),TBD,CAD Imported in URDF,Mount pattern to optical/workbench table
+2,Structural,Link 1 Shoulder Turret,link_1,1,CNC Aluminum / PETG-CF (TBD),TBD,CAD Imported in URDF,Connects J1 output to J2 housing
+3,Structural,Link 2 Upper Arm,link_2__1_,1,CNC Aluminum / Carbon / 3D Print (TBD),TBD,CAD Imported in URDF,Main lower arm segment
+4,Structural,Link 3 Forearm Elbow,link_3__1_,1,CNC Aluminum / Carbon / 3D Print (TBD),TBD,CAD Imported in URDF,Supports J4 housing
+5,Structural,Link 4 Wrist Roll Tube,link_4__1_,1,CNC Aluminum / PETG-CF (TBD),TBD,CAD Imported in URDF,Supports J5 pitch clevis
+6,Structural,Link 5 Wrist Pitch Clevis,link_5__1_,1,CNC Aluminum / PETG-CF (TBD),TBD,CAD Imported in URDF,Supports J6 roll flange
+7,End-Effector,Parallel Gripper Base Housing,gripper_base_link,1,50x96x24 mm housing (URDF parametric box -> CAD TBD),TBD,Template,Mounts to ee_link flange
+8,End-Effector,Parallel Gripper Left Finger,gripper_left_finger,1,24x10x70 mm jaw + high-friction pad,TBD,Template,Prismatic stroke 0-40 mm (+Y)
+9,End-Effector,Parallel Gripper Right Finger,gripper_right_finger,1,24x10x70 mm jaw + high-friction pad,TBD,Template,Prismatic stroke 0-40 mm (-Y)
+10,Actuator,J1 Stepper Motor,j1_stepper_motor,1,Stepper Motor (frame size & holding torque TBD),TBD,CAD Imported in URDF,Base yaw drive
+11,Actuator,J2 Stepper Motor,j2_stepper_motor,1,Stepper Motor (frame size & holding torque TBD),TBD,CAD Imported in URDF,Shoulder pitch drive
+12,Actuator,J3 Stepper Motor,j3_stepper_motor,1,Stepper Motor (frame size & holding torque TBD),TBD,CAD Imported in URDF,Elbow pitch drive
+13,Actuator,J4 Stepper Motor,j4_stepper_motor,1,Stepper Motor (frame size & holding torque TBD),TBD,CAD Imported in URDF,Wrist roll drive
+14,Actuator,J5 Stepper Motor,j5_stepper_motor,1,Stepper Motor (frame size & holding torque TBD),TBD,CAD Imported in URDF,Wrist pitch drive
+15,Actuator,J6 Stepper Motor,j6_stepper_motor,1,Stepper Motor (frame size & holding torque TBD),TBD,CAD Imported in URDF,Tool flange rotation drive
+16,Transmission,J1 Harmonic Drive Reducer,j1_harmonic_drive,1,Strain-wave gear reducer (ratio & model TBD),TBD,CAD Imported in URDF,Base yaw gearbox
+17,Transmission,J2 Harmonic Drive Reducer,j2_harmonic_drive,1,Strain-wave gear reducer (ratio & model TBD),TBD,CAD Imported in URDF,Shoulder pitch gearbox
+18,Transmission,J3 Harmonic Drive Reducer,j3_harmonic_drive,1,Strain-wave gear reducer (ratio & model TBD),TBD,CAD Imported in URDF,Elbow pitch gearbox
+19,Transmission,J4 Harmonic Drive Reducer,j4_harmonic_drive,1,Strain-wave gear reducer (ratio & model TBD),TBD,CAD Imported in URDF,Wrist roll gearbox
+20,Transmission,J5 Harmonic Drive Reducer,j5_harmonic_drive,1,Strain-wave gear reducer (ratio & model TBD),TBD,CAD Imported in URDF,Wrist pitch gearbox
+21,Transmission,J6 Harmonic Drive Reducer,j6_harmonic_drive,1,Strain-wave gear reducer (ratio & model TBD),TBD,CAD Imported in URDF,Tool flange gearbox
+22,Motion Hardware,Cross-Roller / Angular Contact Bearings,all_joints,6,Sized to J1-J6 harmonic drive housings (TBD),TBD,Template,Zero-backlash joint support
+23,Fasteners,Socket Head Cap Screws & Dowel Pins,all_links,1 set,M3 / M4 / M5 Stainless Steel / Class 12.9 (TBD),TBD,Template,Include threadlocker specification

@@ -1,0 +1,39 @@
+<?xml version="1.0"?>
+<robot xmlns:xacro="http://www.ros.org/wiki/xacro" name="sml_arm">
+
+  <!-- Launch / xacro arguments -->
+  <xacro:arg name="prefix" default=""/>
+  <xacro:arg name="use_sim" default="true"/>
+  <xacro:arg name="use_fake_hardware" default="false"/>
+  <xacro:arg name="fast_visual" default="false"/>
+  <xacro:arg name="sim_controllers_yaml" default=""/>
+
+  <!-- World reference link -->
+  <link name="world"/>
+
+  <!-- Include robot kinematics, ros2_control interfaces, and Gazebo plugin -->
+  <xacro:include filename="$(find sml_arm_description)/urdf/sml_arm_macro.xacro"/>
+  <xacro:include filename="$(find sml_arm_description)/urdf/sml_arm.ros2_control.xacro"/>
+  <xacro:include filename="$(find sml_arm_description)/urdf/sml_arm.gazebo.xacro"/>
+
+  <!-- Instantiate robot links and joints (replace sml_arm_macro.xacro when importing your URDF) -->
+  <xacro:sml_arm_description
+    prefix="$(arg prefix)"
+    parent="world"
+    fast_visual="$(arg fast_visual)"/>
+
+  <!-- Instantiate ros2_control hardware/command/state interface definitions -->
+  <xacro:sml_arm_ros2_control
+    name="sml_arm_system"
+    prefix="$(arg prefix)"
+    use_sim="$(arg use_sim)"
+    use_fake_hardware="$(arg use_fake_hardware)"/>
+
+  <!-- Instantiate Gazebo Harmonic gz_ros2_control system plugin -->
+  <xacro:if value="$(arg use_sim)">
+    <xacro:sml_arm_gazebo
+      prefix="$(arg prefix)"
+      sim_controllers_yaml="$(arg sim_controllers_yaml)"/>
+  </xacro:if>
+
+</robot>

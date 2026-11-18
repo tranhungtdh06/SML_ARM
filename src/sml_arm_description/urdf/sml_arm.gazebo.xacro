@@ -1,0 +1,34 @@
+<?xml version="1.0"?>
+<robot xmlns:xacro="http://www.ros.org/wiki/xacro">
+
+  <xacro:macro name="sml_arm_gazebo" params="prefix:='' sim_controllers_yaml:=''">
+
+    <!-- Gazebo Harmonic ros2_control plugin -->
+    <gazebo>
+      <plugin filename="gz_ros2_control-system" name="gz_ros2_control::GazeboSimROS2ControlPlugin">
+        <parameters>${sim_controllers_yaml}</parameters>
+      </plugin>
+    </gazebo>
+
+    <!-- High-friction gripper finger contact surfaces for grasping -->
+    <gazebo reference="${prefix}gripper_left_finger">
+      <mu1>10.0</mu1>
+      <mu2>10.0</mu2>
+      <kp>10000.0</kp>
+      <kd>100.0</kd>
+      <minDepth>0.001</minDepth>
+      <maxVel>0.01</maxVel>
+    </gazebo>
+
+    <gazebo reference="${prefix}gripper_right_finger">
+      <mu1>10.0</mu1>
+      <mu2>10.0</mu2>
+      <kp>10000.0</kp>
+      <kd>100.0</kd>
+      <minDepth>0.001</minDepth>
+      <maxVel>0.01</maxVel>
+    </gazebo>
+
+  </xacro:macro>
+
+</robot>

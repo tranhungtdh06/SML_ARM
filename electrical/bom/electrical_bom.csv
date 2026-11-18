@@ -1,0 +1,11 @@
+item_no,category,component,subsystem,qty,rating_or_spec,manufacturer_or_part_number,status,notes
+1,Power,Main DC Power Supply,Power Bus,1,24V or 48V DC SMPS (power rating TBD),TBD,Template,Main motor bus supply
+2,Power,DC-DC Step-Down Buck Converter,Logic Rail,1,Input 24-48V -> Output 5V / 3.3V (TBD),TBD,Template,Feeds MCU and logic sensors
+3,Safety,Emergency Stop Switch + Contactor/Relay,Safety Loop,1,Latching NC Mushroom E-Stop + Safety Relay (TBD),TBD,Template,Isolates motor power independently of software
+4,Compute,Main Motion Controller MCU Board,Control,1,STM32 / Teensy / ESP32 / Custom PCB (TBD),TBD,Template,Runs deterministic joint interpolation and homing
+5,Motor Drive,Stepper / Closed-Loop Motor Driver (J1-J3 Heavy Axes),J1-J3,3,Closed-loop or open-loop stepper driver (TBD),TBD,Template,Sized for base/shoulder/elbow motors
+6,Motor Drive,Stepper / Closed-Loop Motor Driver (J4-J6 Wrist Axes),J4-J6,3,Closed-loop or open-loop stepper driver (TBD),TBD,Template,Sized for compact wrist motors
+7,End-Effector,Gripper Actuator Driver / Servo Interface,Gripper,1,DC / Stepper / Smart Servo Interface (TBD),TBD,Template,Controls gripper opening 0-80 mm total
+8,Sensors,Homing Limit / Hall / Optical Switches,J1-J6,6,NPN / PNP / Hall effect homing sensors (TBD),TBD,Template,Establishes repeatable zero at home pose
+9,Feedback,Magnetic / Optical Joint Encoders,J1-J6,6,Quadrature / SPI / BiSS-C (if closed-loop, TBD),TBD,Template,Optional/Closed-loop position feedback
+10,Wiring,Flexible Drag-Chain & Aviation/Molex Connectors,Harness,1 set,Shielded twisted pair + high-flex silicone cable (TBD),TBD,Template,Routed across J1-J6 articulation points

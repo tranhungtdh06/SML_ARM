@@ -1,0 +1,51 @@
+controller_manager:
+  ros__parameters:
+    update_rate: 100  # Hz
+
+    joint_state_broadcaster:
+      type: joint_state_broadcaster/JointStateBroadcaster
+
+    arm_trajectory_controller:
+      type: joint_trajectory_controller/JointTrajectoryController
+
+    arm_position_controller:
+      type: position_controllers/JointGroupPositionController
+
+    gripper_controller:
+      type: position_controllers/JointGroupPositionController
+
+arm_trajectory_controller:
+  ros__parameters:
+    joints:
+      - dof_joint1
+      - dof_joint2
+      - dof_joint3
+      - dof_joint4
+      - dof_joint5
+      - dof_joint6
+    command_interfaces:
+      - position
+    state_interfaces:
+      - position
+      - velocity
+    state_publish_rate: 30.0
+    action_monitor_rate: 20.0
+    allow_partial_joints_goal: false
+    allow_nonzero_velocity_at_trajectory_end: true
+    allow_integration_in_goal_trajectories: true
+
+arm_position_controller:
+  ros__parameters:
+    joints:
+      - dof_joint1
+      - dof_joint2
+      - dof_joint3
+      - dof_joint4
+      - dof_joint5
+      - dof_joint6
+
+gripper_controller:
+  ros__parameters:
+    joints:
+      - gripper_left_finger_joint
+      - gripper_right_finger_joint
