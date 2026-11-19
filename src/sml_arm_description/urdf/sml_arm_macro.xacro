@@ -517,9 +517,9 @@
 
     <link name="${prefix}link_2__1_">
       <inertial>
-        <mass value="0.000753763"/>
+        <mass value="0.942204"/>
         <origin xyz="0.0269027 3.10086e-06 0.121509" rpy="0 -0 0"/>
-        <inertia ixx="1.28817e-05" ixy="4.13539e-11" ixz="-5.19652e-07" iyy="1.16132e-05" iyz="3.62503e-10" izz="1.54843e-06"/>
+        <inertia ixx="0.0161021" ixy="5.16924e-08" ixz="-0.000649565" iyy="0.0145165" iyz="4.53129e-07" izz="0.00193554"/>
       </inertial>
       <xacro:unless value="${fast_visual}">
         <visual>
@@ -589,9 +589,9 @@
 
     <link name="${prefix}link_3__1_">
       <inertial>
-        <mass value="0.000624869"/>
+        <mass value="0.781086"/>
         <origin xyz="-0.0299137 -2.71824e-05 0.0174805" rpy="0 -0 0"/>
-        <inertia ixx="2.35456e-06" ixy="5.69021e-11" ixz="2.4373e-08" iyy="2.05757e-06" iyz="1.45188e-09" izz="8.4546e-07"/>
+        <inertia ixx="0.0029432" ixy="7.11276e-08" ixz="3.04662e-05" iyy="0.00257196" iyz="1.81485e-06" izz="0.00105682"/>
       </inertial>
       <xacro:unless value="${fast_visual}">
         <visual>
@@ -652,9 +652,9 @@
 
     <link name="${prefix}link_4__1_">
       <inertial>
-        <mass value="0.000418807"/>
+        <mass value="0.523509"/>
         <origin xyz="-0.00152469 -0.000405617 0.0786794" rpy="0 -0 0"/>
-        <inertia ixx="1.68609e-06" ixy="9.07382e-10" ixz="1.49281e-07" iyy="1.71164e-06" iyz="-7.69868e-09" izz="8.70106e-07"/>
+        <inertia ixx="0.00210761" ixy="1.13423e-06" ixz="0.000186601" iyy="0.00213955" iyz="-9.62335e-06" izz="0.00108763"/>
       </inertial>
       <xacro:unless value="${fast_visual}">
         <visual>
@@ -697,9 +697,9 @@
 
     <link name="${prefix}link_5__1_">
       <inertial>
-        <mass value="0.00023358"/>
+        <mass value="0.291975"/>
         <origin xyz="0.0159858 0.00216438 0.0449918" rpy="0 -0 0"/>
-        <inertia ixx="4.26084e-07" ixy="6.15092e-10" ixz="2.38487e-08" iyy="4.24272e-07" iyz="-5.38815e-09" izz="1.53801e-07"/>
+        <inertia ixx="0.000532605" ixy="7.68865e-07" ixz="2.98109e-05" iyy="0.00053034" iyz="-6.73519e-06" izz="0.000192251"/>
       </inertial>
       <xacro:unless value="${fast_visual}">
         <visual>
