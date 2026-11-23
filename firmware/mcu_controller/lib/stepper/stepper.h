@@ -1,17 +1,19 @@
 /**
  * @file    stepper.h
- * @brief   Procedural STEP/DIR motor control API.
+ * @brief   STEP/DIR motor control interface.
  * @project SML Arm Firmware
  * @version 0.2.0
  */
 
 #ifndef SML_STEPPER_H
 #define SML_STEPPER_H
+
 #include <stdint.h>
-// ================= CONFIGURATION =================
+#include <stdbool.h>
+
 #define STEPPER_MAX_MOTORS 6U
 
-// ================= ERROR CODES =================
+// Stepper operation results.
 typedef enum
 {
     STEPPER_OK = 0,
@@ -26,7 +28,7 @@ typedef enum
     STEPPER_ERR_NOT_CONFIGURED
 } StepperResult;
 
-// ================= HARDWARE CONFIG =================
+// STEP/DIR hardware configuration.
 typedef struct
 {
     uint8_t stepPin;
@@ -35,7 +37,7 @@ typedef struct
     uint16_t dirDelayUs;
 } StepperPins;
 
-// ================= MOTION CONFIG =================
+// Motion configuration in motor step units.
 typedef struct
 {
     uint32_t speedHz;
@@ -43,32 +45,30 @@ typedef struct
     uint32_t linearAccelerationSteps;
 } StepperMotionConfig;
 
-// ================= INITIALIZATION =================
+// Initialization.
 StepperResult Stepper_Init(void);
-StepperResult Stepper_Attach(uint8_t jointId,const StepperPins *pins);
+StepperResult Stepper_Attach(uint8_t jointId, const StepperPins *pins);
 
-// ================= MOTION CONFIGURATION =================
-StepperResult Stepper_SetMotionConfig(uint8_t jointId,const StepperMotionConfig *config);
-StepperResult Stepper_GetMotionConfig(uint8_t jointId,StepperMotionConfig *config);
-StepperResult Stepper_SetSpeedHz(uint8_t jointId,uint32_t speedHz);
-StepperResult Stepper_SetAcceleration(uint8_t jointId,uint32_t stepsPerSecond2);
-StepperResult Stepper_SetLinearAcceleration(uint8_t jointId,uint32_t steps);
+// Motion configuration.
+StepperResult Stepper_SetMotionConfig(uint8_t jointId, const StepperMotionConfig *config);
+StepperResult Stepper_GetMotionConfig(uint8_t jointId, StepperMotionConfig *config);
+StepperResult Stepper_SetSpeedHz(uint8_t jointId, uint32_t speedHz);
+StepperResult Stepper_SetAcceleration(uint8_t jointId, uint32_t stepsPerSecond2);
+StepperResult Stepper_SetLinearAcceleration(uint8_t jointId, uint32_t steps);
 
-// ================= POSITION CONTROL =================
+// Position control.
 StepperResult Stepper_SetZero(uint8_t jointId);
-StepperResult Stepper_MoveToSteps(uint8_t jointId,int32_t targetSteps);
-StepperResult Stepper_MoveRelativeSteps( uint8_t jointId, int32_t deltaSteps);
+StepperResult Stepper_InvalidatePosition(uint8_t jointId);
+StepperResult Stepper_MoveToSteps(uint8_t jointId, int32_t targetSteps);
+StepperResult Stepper_MoveRelativeSteps(uint8_t jointId, int32_t deltaSteps);
 
-// ================= STOP CONTROL =================
+// Motion stopping.
+StepperResult Stepper_Stop(uint8_t jointId, bool hardStop);
 
-// false = controlled deceleration
-// true  = immediate software stop
-StepperResult Stepper_Stop( uint8_t jointId, bool hardStop);
-
-// ================= STATUS =================
-StepperResult Stepper_GetPositionSteps( uint8_t jointId, int32_t *position);
+// Motor status.
+StepperResult Stepper_GetPositionSteps(uint8_t jointId, int32_t *position);
 bool Stepper_IsAttached(uint8_t jointId);
 bool Stepper_IsRunning(uint8_t jointId);
 bool Stepper_IsPositionValid(uint8_t jointId);
 
-#endif // SML_STEPPER_H
+#endif

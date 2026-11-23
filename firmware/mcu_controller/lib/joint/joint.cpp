@@ -19,10 +19,32 @@ static bool finiteValue(float value)
     return isfinite(value);
 }
 
-static float stepsPerDegree(uint8_t id)
+static double stepsPerDegree(uint8_t id)
 {
     const JointConfig *cfg = &jointConfigs[id - 1U];
-    return ((float)cfg->stepsPerRevolution * cfg->gearRatio) / 360.0f;
+    return ((double)cfg->stepsPerRevolution * (double)cfg->gearRatio) / 360.0;
+}
+
+// Validate mechanical parameters and the representable step range.
+static JointResult validateConfig(const JointConfig *cfg)
+{
+    if (cfg == nullptr)
+        return JOINT_ERR_INVALID_PARAM;
+    if (cfg->stepsPerRevolution == 0U || !finiteValue(cfg->gearRatio) || cfg->gearRatio <= 0.0f ||
+        !finiteValue(cfg->minAngleDeg) || !finiteValue(cfg->maxAngleDeg) ||
+        cfg->minAngleDeg >= cfg->maxAngleDeg ||
+        cfg->minAngleDeg > 0.0f || cfg->maxAngleDeg < 0.0f)
+        return JOINT_ERR_INVALID_PARAM;
+
+    double scale = ((double)cfg->stepsPerRevolution * (double)cfg->gearRatio) / 360.0;
+    double minSteps = (double)cfg->minAngleDeg * scale;
+    double maxSteps = (double)cfg->maxAngleDeg * scale;
+
+    if (!isfinite(scale) || scale <= 0.0 || !isfinite(minSteps) || !isfinite(maxSteps) ||
+        minSteps < INT32_MIN || maxSteps > INT32_MAX)
+        return JOINT_ERR_OUT_OF_RANGE;
+
+    return JOINT_OK;
 }
 
 static JointResult checkJoint(uint8_t id)
@@ -43,7 +65,7 @@ static JointResult angleToSteps(uint8_t id, float angle, int32_t *steps)
     if (steps == nullptr || !finiteValue(angle))
         return JOINT_ERR_INVALID_PARAM;
 
-    double value = (double)angle * (double)stepsPerDegree(id);
+    double value = (double)angle * stepsPerDegree(id);
     if (jointConfigs[id - 1U].inverted)
         value = -value;
 
@@ -61,20 +83,19 @@ static JointResult convertMotion(uint8_t id, const JointMotionConfig *cfg, Stepp
     if (!finiteValue(cfg->speedDegS) || !finiteValue(cfg->accelerationDegS2) ||
         !finiteValue(cfg->linearAccelerationDeg))
         return JOINT_ERR_INVALID_PARAM;
-
     if (cfg->speedDegS <= 0.0f || cfg->accelerationDegS2 <= 0.0f ||
         cfg->linearAccelerationDeg < 0.0f)
         return JOINT_ERR_INVALID_PARAM;
 
-    double scale = (double)stepsPerDegree(id);
+    double scale = stepsPerDegree(id);
     double speed = (double)cfg->speedDegS * scale;
     double accel = (double)cfg->accelerationDegS2 * scale;
     double linear = (double)cfg->linearAccelerationDeg * scale;
 
     if (!isfinite(speed) || !isfinite(accel) || !isfinite(linear) ||
         speed < 1.0 || accel < 1.0 ||
-        speed >= 4294967295.5 || accel >= 4294967295.5 ||
-        linear >= 4294967295.5)
+        speed > (double)INT32_MAX || accel > (double)INT32_MAX ||
+        linear > (double)UINT32_MAX)
         return JOINT_ERR_OUT_OF_RANGE;
 
     out->speedHz = (uint32_t)round(speed);
@@ -105,35 +126,100 @@ JointResult Joint_Configure(uint8_t id, const JointConfig *cfg)
         return JOINT_ERR_NOT_INITIALIZED;
     if (!validId(id))
         return JOINT_ERR_ID;
-    if (cfg == nullptr)
-        return JOINT_ERR_INVALID_PARAM;
     if (!Stepper_IsAttached(id))
         return JOINT_ERR_STEPPER;
     if (Stepper_IsRunning(id))
         return JOINT_ERR_BUSY;
 
-    if (cfg->stepsPerRevolution == 0U ||
-        !finiteValue(cfg->gearRatio) || cfg->gearRatio <= 0.0f ||
-        !finiteValue(cfg->minAngleDeg) || !finiteValue(cfg->maxAngleDeg) ||
-        cfg->minAngleDeg >= cfg->maxAngleDeg ||
-        cfg->minAngleDeg > 0.0f || cfg->maxAngleDeg < 0.0f)
-        return JOINT_ERR_INVALID_PARAM;
+    JointResult result = validateConfig(cfg);
+    if (result != JOINT_OK)
+        return result;
 
-    double scale = ((double)cfg->stepsPerRevolution * cfg->gearRatio) / 360.0;
-    double minSteps = (double)cfg->minAngleDeg * scale;
-    double maxSteps = (double)cfg->maxAngleDeg * scale;
-
-    if (!isfinite(scale) || scale <= 0.0 ||
-        minSteps < INT32_MIN || maxSteps > INT32_MAX)
-        return JOINT_ERR_OUT_OF_RANGE;
-
-    // Avoid silently changing calibration after zero is established.
+    // Initial configuration must not overwrite a known position.
     if (Stepper_IsPositionValid(id))
         return JOINT_ERR_BUSY;
 
     jointConfigs[id - 1U] = *cfg;
     motionConfigs[id - 1U] = {};
     configured[id - 1U] = true;
+    return JOINT_OK;
+}
+
+JointResult Joint_GetConfig(uint8_t id, JointConfig *cfg)
+{
+    JointResult result = checkJoint(id);
+    if (result != JOINT_OK)
+        return result;
+    if (cfg == nullptr)
+        return JOINT_ERR_INVALID_PARAM;
+
+    *cfg = jointConfigs[id - 1U];
+    return JOINT_OK;
+}
+
+JointResult Joint_UpdateConfig(uint8_t id, const JointConfig *cfg)
+{
+    JointResult result = checkJoint(id);
+    if (result != JOINT_OK)
+        return result;
+    if (Stepper_IsRunning(id))
+        return JOINT_ERR_BUSY;
+
+    result = validateConfig(cfg);
+    if (result != JOINT_OK)
+        return result;
+
+    const JointConfig old = jointConfigs[id - 1U];
+    bool conversionChanged = (old.stepsPerRevolution != cfg->stepsPerRevolution) ||
+                             (old.gearRatio != cfg->gearRatio) ||
+                             (old.inverted != cfg->inverted);
+
+    // Limit-only changes must retain the current position safely.
+    if (!conversionChanged && Stepper_IsPositionValid(id))
+    {
+        float current = 0.0f;
+        result = Joint_GetAngle(id, &current);
+        if (result != JOINT_OK)
+            return result;
+        if (current < cfg->minAngleDeg || current > cfg->maxAngleDeg)
+            return JOINT_ERR_OUT_OF_RANGE;
+    }
+
+    // Recalculate the existing motion profile before committing changes.
+    JointMotionConfig motion = motionConfigs[id - 1U];
+    bool motionConfigured = (motion.speedDegS > 0.0f);
+    StepperMotionConfig raw = {};
+
+    if (conversionChanged)
+        jointConfigs[id - 1U] = *cfg;
+
+    if (motionConfigured)
+    {
+        result = convertMotion(id, &motion, &raw);
+        if (result != JOINT_OK)
+        {
+            jointConfigs[id - 1U] = old;
+            return result;
+        }
+
+        if (Stepper_SetMotionConfig(id, &raw) != STEPPER_OK)
+        {
+            jointConfigs[id - 1U] = old;
+            return JOINT_ERR_STEPPER;
+        }
+    }
+
+    if (conversionChanged)
+    {
+        // A new step-to-angle conversion invalidates the previous zero reference.
+        if (Stepper_InvalidatePosition(id) != STEPPER_OK)
+        {
+            jointConfigs[id - 1U] = old;
+            return JOINT_ERR_STEPPER;
+        }
+    }
+
+    jointConfigs[id - 1U] = *cfg;
     return JOINT_OK;
 }
 
@@ -273,7 +359,7 @@ JointResult Joint_GetAngle(uint8_t id, float *angleDeg)
     if (Stepper_GetPositionSteps(id, &steps) != STEPPER_OK)
         return JOINT_ERR_STEPPER;
 
-    float angle = (float)((double)steps / (double)stepsPerDegree(id));
+    float angle = (float)((double)steps / stepsPerDegree(id));
     if (jointConfigs[id - 1U].inverted)
         angle = -angle;
 
