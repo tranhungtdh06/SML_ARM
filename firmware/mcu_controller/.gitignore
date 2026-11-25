@@ -1,0 +1,23 @@
+# PlatformIO
+.pio/
+
+# VS Code
+.vscode/
+
+# Python
+__pycache__/
+.venv/
+
+# Build artifacts
+build/
+*.elf
+*.bin
+*.hex
+*.map
+
+# Logs
+*.log
+
+# OS files
+.DS_Store
+Thumbs.db
