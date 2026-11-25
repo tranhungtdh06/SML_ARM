@@ -15,10 +15,10 @@
 #include <errno.h>
 #include <limits.h>
 
-#define TOOL_MAX_TOKENS 5U
+#define TOOL_MAX_TOKENS (1U + 2U * ROBOT_MAX_JOINTS)
 
 static char s_buffer[TOOL_BUFFER_SIZE] = {};
-static uint8_t s_index = 0U;
+static uint16_t s_index = 0U;
 static bool s_discardLine = false;
 static bool s_initialized = false;
 
@@ -103,6 +103,7 @@ static void Tool_PrintHelp(void)
     Serial.println("PING | HELP | STATUS <id> | CONFIG <id>");
     Serial.println("ZERO <id> | ANGLE <id>");
     Serial.println("GOTO <id> <deg> | JREL <id> <deg>");
+    Serial.println("GROUP <id> <deg> <id> <deg> ... (2-6 joints, independent profiles)");
     Serial.println("PPR <id> <steps> | GEAR <id> <ratio>");
     Serial.println("INVERT <id> <0|1> | LIMIT <id> <min> <max>");
     Serial.println("SPEED <id> <deg/s> | ACCEL <id> <deg/s2>");
@@ -322,6 +323,33 @@ static void Tool_ProcessCommand(char *input)
             return;
         }
         Tool_PrintResult(Robot_Stop(id, hardStop), command, id);
+        return;
+    }
+
+    if (strcmp(command, "GROUP") == 0)
+    {
+        if (count < 5U || (count % 2U) == 0U)
+        {
+            Serial.println("[ERROR] GROUP INVALID_ARGUMENT");
+            return;
+        }
+        RobotJointTarget targets[ROBOT_MAX_JOINTS] = {};
+        const uint8_t n = (count - 1U) / 2U;
+        for (uint8_t i = 0U; i < n; ++i)
+        {
+            if (!Tool_ParseJointId(tokens[1U + 2U * i], &targets[i].jointId) ||
+                !Tool_ParseFloat(tokens[2U + 2U * i], &targets[i].angleDeg))
+            {
+                Serial.println("[ERROR] GROUP INVALID_ARGUMENT");
+                return;
+            }
+        }
+        uint8_t failed = 0U;
+        RobotResult result = Robot_MoveGroup(targets, n, &failed);
+        if (result == ROBOT_OK)
+            Serial.println("[OK] GROUP");
+        else
+            Serial.printf("[ERROR] GROUP J%u %s\n", failed, Tool_ResultText(result));
         return;
     }
 

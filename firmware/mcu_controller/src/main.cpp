@@ -24,7 +24,8 @@ void setup(void)
   RobotResult result = Robot_Init();
   if (result != ROBOT_OK)
   {
-    Serial.printf("[ERROR] ROBOT_INIT FAILED CODE=%u\n", (unsigned int)result);
+    Serial.printf("[ERROR] ROBOT_INIT FAILED CODE=%u JOINT=%u\n",
+                  (unsigned int)result, (unsigned int)Robot_GetInitFailedJoint());
     return;
   }
 

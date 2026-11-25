@@ -299,7 +299,7 @@ JointResult Joint_SetZero(uint8_t id)
     return (Stepper_SetZero(id) == STEPPER_OK) ? JOINT_OK : JOINT_ERR_STEPPER;
 }
 
-JointResult Joint_MoveToAngle(uint8_t id, float angleDeg)
+JointResult Joint_CheckMoveToAngle(uint8_t id, float angleDeg)
 {
     JointResult result = checkJoint(id);
     if (result != JOINT_OK)
@@ -320,6 +320,25 @@ JointResult Joint_MoveToAngle(uint8_t id, float angleDeg)
     if (result != JOINT_OK)
         return result;
 
+    switch (Stepper_CheckMoveToSteps(id, target))
+    {
+    case STEPPER_OK: return JOINT_OK;
+    case STEPPER_ERR_BUSY: return JOINT_ERR_BUSY;
+    case STEPPER_ERR_POSITION_UNKNOWN: return JOINT_ERR_POSITION_UNKNOWN;
+    case STEPPER_ERR_OUT_OF_RANGE: return JOINT_ERR_OUT_OF_RANGE;
+    default: return JOINT_ERR_STEPPER;
+    }
+}
+
+JointResult Joint_MoveToAngle(uint8_t id, float angleDeg)
+{
+    JointResult result = Joint_CheckMoveToAngle(id, angleDeg);
+    if (result != JOINT_OK)
+        return result;
+    int32_t target = 0;
+    result = angleToSteps(id, angleDeg, &target);
+    if (result != JOINT_OK)
+        return result;
     return (Stepper_MoveToSteps(id, target) == STEPPER_OK) ? JOINT_OK : JOINT_ERR_STEPPER;
 }
 

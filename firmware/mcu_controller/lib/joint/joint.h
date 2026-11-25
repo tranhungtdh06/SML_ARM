@@ -52,6 +52,7 @@ JointResult Joint_SetLinearAcceleration(uint8_t jointId, float angleDeg);
 
 // Position and motion control.
 JointResult Joint_SetZero(uint8_t jointId);
+JointResult Joint_CheckMoveToAngle(uint8_t jointId, float angleDeg);
 JointResult Joint_MoveToAngle(uint8_t jointId, float angleDeg);
 JointResult Joint_MoveRelativeAngle(uint8_t jointId, float deltaDeg);
 JointResult Joint_GetAngle(uint8_t jointId, float *angleDeg);

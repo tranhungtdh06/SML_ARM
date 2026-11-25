@@ -11,7 +11,7 @@
 #include <stdint.h>
 #include <stdbool.h>
 
-#define TOOL_BUFFER_SIZE 128U
+#define TOOL_BUFFER_SIZE 256U
 
 // Initialize the serial command interface.
 void Tool_Init(uint32_t baudRate);

@@ -24,9 +24,9 @@ from appearance import AppearanceManager, ThemeDialog, PRESETS, LOG_COLORS, styl
 
 JOINT_NAMES = {1: 'Base', 2: 'Shoulder', 3: 'Elbow', 4: 'Wrist 1',
                5: 'Wrist 2', 6: 'Tool'}
-LINKED_JOINTS = (1,)  # Enable more only after firmware and hardware are ready.
-DEFAULTS = {'PPR': '800', 'GEAR': '100', 'INVERT': '0', 'MIN': '-180',
-            'MAX': '180', 'SPEED': '18', 'ACCEL': '13.5', 'LINEAR': '0.9'}
+LINKED_JOINTS = tuple(JOINT_NAMES)  # Availability is confirmed by STATUS.
+DEFAULTS = {'PPR': '1600', 'GEAR': '100', 'INVERT': '0', 'MIN': '-180',
+            'MAX': '180', 'SPEED': '9', 'ACCEL': '6.75', 'LINEAR': '0.45'}
 CONFIG_COMMANDS = {'PPR', 'GEAR', 'INVERT', 'LIMIT', 'SPEED', 'ACCEL', 'LINEAR'}
 MOTION_COMMANDS = {'GOTO', 'JREL'}
 TIMEOUT = 3.0
@@ -198,6 +198,7 @@ class MainWindow(QMainWindow):
         self.need_config = {}  # joint -> force reload editable fields
         self.tracking = set()
         self.next_poll = 0.0
+        self.poll_cursor = 0
         self._build_ui()
         QApplication.styleHints().colorSchemeChanged.connect(self._system_theme_changed)
         self.serial.received.connect(self._on_received)
@@ -377,7 +378,7 @@ class MainWindow(QMainWindow):
         self.splitter.setStretchFactor(0, 3)
         self.splitter.setStretchFactor(1, 2)
         self.splitter.setSizes([450, 180])
-        self.statusBar().showMessage('J1 hardware test | J2–J6 reserved | Software ESTOP is not a physical E-stop')
+        self.statusBar().showMessage('6-joint hardware test | Software ESTOP is not a physical E-stop')
 
     def _build_control(self):
         page = QWidget()
@@ -449,7 +450,7 @@ class MainWindow(QMainWindow):
     def _build_multi(self):
         page = QWidget()
         root = QVBoxLayout(page)
-        hint = QLabel('Independent joint commands · Coordinated Move All is not supported by this firmware.')
+        hint = QLabel('Independent profiles · Group starts multiple joints without waiting; finish times may differ.')
         hint.setProperty('role', 'muted')
         root.addWidget(hint)
         g = QGridLayout()
@@ -459,7 +460,7 @@ class MainWindow(QMainWindow):
             heading.setProperty('role','tableHeader')
             g.addWidget(heading, 0, col)
         for j, name in JOINT_NAMES.items():
-            angle, target, state = QLabel('—'), self._number('0'), QLabel('Not linked')
+            angle, target, state = QLabel('—'), self._number('0'), QLabel('Offline')
             b = self._button(f'Move J{j}', lambda checked=False, jid=j: self._move('GOTO', jid, self.multi[jid][1]))
             axis = QLabel(f'J{j}  {name}')
             axis.setProperty('role','heading')
@@ -474,7 +475,11 @@ class MainWindow(QMainWindow):
         g.setVerticalSpacing(6)
         root.addLayout(g)
         self.multi_refresh = self._button('Refresh linked joints', self._refresh_all)
-        root.addWidget(self.multi_refresh)
+        row = QHBoxLayout()
+        row.addWidget(self.multi_refresh)
+        self.group_btn = self._button('Move all 6 (independent)', self._move_all, '#f3d4e6')
+        row.addWidget(self.group_btn)
+        root.addLayout(row)
         root.addStretch(1)
         return page
 
@@ -539,7 +544,7 @@ class MainWindow(QMainWindow):
             v = QVBoxLayout(card)
             angle = QLabel('—')
             angle.setProperty('role', 'monitorAngle')
-            label = QLabel('Not linked')
+            label = QLabel('Offline')
             label.setWordWrap(True)
             label.setProperty('role', 'muted')
             v.addWidget(angle)
@@ -635,6 +640,7 @@ class MainWindow(QMainWindow):
         self.configs.clear()
         self.states = {j: JointState() for j in JOINT_NAMES}
         self.next_poll = 0.0
+        self.poll_cursor = 0
 
     def _on_connection(self, connected, port):
         self.connected = connected
@@ -675,6 +681,8 @@ class MainWindow(QMainWindow):
             sent = self.client.ping()
         elif verb == 'HELP':
             sent = self.serial.send('HELP')
+        elif verb == 'GROUP':
+            sent = self.serial.send('GROUP ' + ' '.join(str(v) for v in values))
         else:
             sent = self.client.send(verb, joint, *values)
         if not sent:
@@ -683,7 +691,11 @@ class MainWindow(QMainWindow):
         self.pending = Reply(verb, joint, tuple(str(v) for v in values), quiet, reload)
         if verb == 'CONFIG' and reload:
             self.pending.draft_snapshot = dict(self.drafts[joint])
-        if verb in MOTION_COMMANDS | CONFIG_COMMANDS | {'ZERO'}:
+        if verb == 'GROUP':
+            for j in map(int, values[::2]):
+                self.status_seen.discard(j)
+                self.tracking.add(j)
+        elif verb in MOTION_COMMANDS | CONFIG_COMMANDS | {'ZERO'}:
             self.status_seen.discard(joint)
         if verb in CONFIG_COMMANDS:
             self.configs.pop(joint, None)  # Require fresh readback before motion.
@@ -764,6 +776,14 @@ class MainWindow(QMainWindow):
 
     def _complete(self, p, success):
         j = p.joint
+        if p.verb == 'GROUP':
+            # Refresh every involved joint on either ACK or error: a failed
+            # launch may have stopped and invalidated some coordinates.
+            for axis in map(int, p.values[::2]):
+                self.status_seen.discard(axis)
+                self.need_status.add(axis)
+                self.tracking.add(axis)
+            return
         if not success:
             if j is not None:
                 self.status_seen.discard(j)
@@ -788,6 +808,9 @@ class MainWindow(QMainWindow):
                 if angle is not None and not math.isfinite(angle):
                     raise ValueError('Invalid reported angle')
                 state.available = d['AVAILABLE'] == '1'
+                if not state.available:
+                    self.need_config.pop(j, None)
+                    self.configs.pop(j, None)
                 state.running = d['RUNNING'] == '1'
                 state.position_valid = d['POSITION_VALID'] == '1'
                 state.angle = angle
@@ -879,8 +902,9 @@ class MainWindow(QMainWindow):
         if not self._busy() and self.connected and self.ready and not self.protocol_fault and now >= self.next_poll:
             joints = sorted(self.tracking or (set(LINKED_JOINTS) if self.auto_refresh.isChecked() else set()))
             if joints:
-                # Cycle through joints if more are linked in a future revision.
-                j = joints[int(now * 10) % len(joints)] if len(joints) > 1 else joints[0]
+                # Round-robin by joint ID, even as the tracking set changes.
+                j = next((axis for axis in joints if axis > self.poll_cursor), joints[0])
+                self.poll_cursor = j
                 self.next_poll = now + (0.5 if self.tracking else self.interval.currentData() / 1000)
                 self._request('STATUS', j, quiet=True)
         self._render()
@@ -957,6 +981,37 @@ class MainWindow(QMainWindow):
     def _move(self, verb, j, edit):
         self._issue_values(verb, j, (edit.text(),))
 
+    def _issue_group(self, pairs):
+        try:
+            if not 2 <= len(pairs) <= 6 or len({j for j, _ in pairs}) != len(pairs):
+                raise ValueError('GROUP requires 2–6 distinct joints.')
+            args = []
+            for j, text in pairs:
+                if j not in LINKED_JOINTS or not self._can_move(j):
+                    raise ValueError(f'J{j} must be available, idle and have valid zero/config.')
+                value = numeric(text)
+                d = self.configs[j]
+                if not float(d['MIN']) <= float(value) <= float(d['MAX']):
+                    raise ValueError(f'J{j} target is outside the firmware limits.')
+                args.extend((str(j), value))
+            summary = ', '.join(f'J{j}: {v}°' for j, v in zip(args[::2], args[1::2]))
+            answer = QMessageBox.question(self, 'Start group motion',
+                summary + '\nIndependent profiles; verify the mechanism and clear the workspace.',
+                QMessageBox.StandardButton.Yes | QMessageBox.StandardButton.No,
+                QMessageBox.StandardButton.No)
+            if answer != QMessageBox.StandardButton.Yes:
+                return False
+            # Modal dialog may process status/connection events. Recheck readiness.
+            if not all(self._can_move(j) for j, _ in pairs):
+                raise ValueError('Joint readiness changed; refresh and retry.')
+            return self._request('GROUP', None, *args)
+        except (ValueError, TypeError, KeyError) as exc:
+            self._log('WARN', str(exc))
+            return False
+
+    def _move_all(self):
+        self._issue_group([(j, self.multi[j][1].text()) for j in LINKED_JOINTS])
+
     def _jog(self, sign):
         try:
             step = numeric(self.jog_step.text())
@@ -999,6 +1054,11 @@ class MainWindow(QMainWindow):
         sent = False
         if verb in ('PING', 'HELP') and len(parts) == 1:
             sent = self._request(verb)
+        elif verb == 'GROUP':
+            if 5 <= len(parts) <= 13 and len(parts) % 2 == 1 and all(x.isdigit() for x in parts[1::2]):
+                sent = self._issue_group([(int(j), v) for j, v in zip(parts[1::2], parts[2::2])])
+            else:
+                self._log('WARN', 'Use GROUP <id> <angle> <id> <angle> ...')
         elif verb in ('STOP', 'ESTOP') and len(parts) == 2 and parts[1].upper() == 'ALL':
             sent = self._stop(verb, 'ALL')
         elif len(parts) >= 2 and parts[1].isdigit() and int(parts[1]) in LINKED_JOINTS:
@@ -1076,6 +1136,7 @@ class MainWindow(QMainWindow):
         estimate = self.states[j].angle if angle != '—' else None
         self.gauge.set_data(estimate, limits)
         self.config_note.setText(f'J{j} · ' + ('Firmware config read' if j in self.configs else 'Local values — not confirmed by firmware') + (' · Unapplied edits' if self.dirty[j] else ''))
+        self.group_btn.setEnabled(all(self._can_move(i) for i in LINKED_JOINTS))
         for i, (a, t, s, b) in self.multi.items():
             description, value = self._describe(i)
             a.setText(value)
@@ -1112,7 +1173,7 @@ class MainWindow(QMainWindow):
 
     def _confirm_disconnect(self):
         if self.connected and (self.protocol_fault or self.tracking or self.stops or any(s.running for s in self.states.values()) or
-                               (self.pending and self.pending.verb in MOTION_COMMANDS)):
+                               (self.pending and self.pending.verb in MOTION_COMMANDS | {'GROUP'})):
             return QMessageBox.question(self, 'Motion may be active',
                 'Disconnecting does not stop the robot. Verify that the mechanism is safe before disconnecting.',
                 QMessageBox.StandardButton.Yes | QMessageBox.StandardButton.No, QMessageBox.StandardButton.No) == QMessageBox.StandardButton.Yes

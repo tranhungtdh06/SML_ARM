@@ -11,6 +11,7 @@
 #include "robot_config.h"
 
 static bool s_initialized = false;
+static uint8_t s_initFailedJoint = 0U;
 static bool s_available[ROBOT_MAX_JOINTS] = {};
 
 // Convert Joint errors to Robot errors.
@@ -92,34 +93,61 @@ RobotResult Robot_Init(void)
     if (Joint_Init() != JOINT_OK)
         return ROBOT_ERR_DRIVER;
 
-    // J1 is the only joint with confirmed pin assignments.
-    StepperPins j1Pins = {J1_STEP_PIN, J1_DIR_PIN, true, STEPPER_DIR_DELAY_US};
-    JointConfig j1Config = {
-        J1_STEPS_PER_REV,
-        J1_GEAR_RATIO,
-        J1_MIN_ANGLE_DEG,
-        J1_MAX_ANGLE_DEG,
-        J1_INVERTED};
-    JointMotionConfig j1Motion = {
-        J1_SPEED_DEG_S,
-        J1_ACCEL_DEG_S2,
-        J1_LINEAR_ACCEL_DEG};
+    const bool enabled[ROBOT_MAX_JOINTS] = {
+        J1_ENABLED, J2_ENABLED, J3_ENABLED,
+        J4_ENABLED, J5_ENABLED, J6_ENABLED};
+    const StepperPins pins[ROBOT_MAX_JOINTS] = {
+        {J1_STEP_PIN, J1_DIR_PIN, STEPPER_DIR_HIGH_COUNTS_UP, STEPPER_DIR_DELAY_US},
+        {J2_STEP_PIN, J2_DIR_PIN, STEPPER_DIR_HIGH_COUNTS_UP, STEPPER_DIR_DELAY_US},
+        {J3_STEP_PIN, J3_DIR_PIN, STEPPER_DIR_HIGH_COUNTS_UP, STEPPER_DIR_DELAY_US},
+        {J4_STEP_PIN, J4_DIR_PIN, STEPPER_DIR_HIGH_COUNTS_UP, STEPPER_DIR_DELAY_US},
+        {J5_STEP_PIN, J5_DIR_PIN, STEPPER_DIR_HIGH_COUNTS_UP, STEPPER_DIR_DELAY_US},
+        {J6_STEP_PIN, J6_DIR_PIN, STEPPER_DIR_HIGH_COUNTS_UP, STEPPER_DIR_DELAY_US}};
+    const JointConfig defaults = {
+        DEFAULT_STEPS_PER_REV, DEFAULT_GEAR_RATIO,
+        DEFAULT_MIN_ANGLE_DEG, DEFAULT_MAX_ANGLE_DEG, DEFAULT_INVERTED};
+    const JointMotionConfig motion = {
+        DEFAULT_SPEED_DEG_S, DEFAULT_ACCEL_DEG_S2, DEFAULT_LINEAR_ACCEL_DEG};
 
-    RobotResult result = Robot_AttachJoint(1U, &j1Pins, &j1Config, &j1Motion);
-    if (result != ROBOT_OK)
-        return result;
+    bool anyEnabled = false;
+    for (uint8_t i = 0U; i < ROBOT_MAX_JOINTS; ++i)
+    {
+        if (!enabled[i])
+            continue;
+        anyEnabled = true;
+        const uint8_t id = i + 1U;
+        RobotResult result = Robot_AttachJoint(id, &pins[i], &defaults, &motion);
+        if (result != ROBOT_OK)
+        {
+            // No motion is allowed on a partially initialized robot.
+            s_initFailedJoint = id;
+            return result;
+        }
+    }
+    if (!anyEnabled)
+        return ROBOT_ERR_NOT_AVAILABLE;
 
     s_initialized = true;
     return ROBOT_OK;
 }
 
+uint8_t Robot_GetInitFailedJoint(void)
+{
+    return s_initFailedJoint;
+}
+
 RobotResult Robot_GetStatus(uint8_t jointId, RobotJointStatus *status)
 {
-    RobotResult result = Robot_CheckJoint(jointId);
-    if (result != ROBOT_OK)
-        return result;
+    if (!s_initialized)
+        return ROBOT_ERR_NOT_INITIALIZED;
+    if (jointId < 1U || jointId > ROBOT_MAX_JOINTS)
+        return ROBOT_ERR_ID;
     if (status == nullptr)
         return ROBOT_ERR_INVALID_PARAM;
+
+    *status = {};
+    if (!s_available[jointId - 1U])
+        return ROBOT_OK;
 
     status->available = true;
     status->running = Joint_IsRunning(jointId);
@@ -189,6 +217,56 @@ RobotResult Robot_MoveToAngle(uint8_t jointId, float angleDeg)
     if (result != ROBOT_OK)
         return result;
     return Robot_FromJointResult(Joint_MoveToAngle(jointId, angleDeg));
+}
+
+RobotResult Robot_MoveGroup(const RobotJointTarget *targets, uint8_t count,
+                            uint8_t *failedJoint)
+{
+    if (failedJoint != nullptr)
+        *failedJoint = 0U;
+    if (!s_initialized)
+        return ROBOT_ERR_NOT_INITIALIZED;
+    if (targets == nullptr || count < 2U || count > ROBOT_MAX_JOINTS)
+        return ROBOT_ERR_INVALID_PARAM;
+
+    // Phase 1: validate every target before issuing any movement.
+    bool selected[ROBOT_MAX_JOINTS] = {};
+    for (uint8_t i = 0U; i < count; ++i)
+    {
+        const uint8_t id = targets[i].jointId;
+        if (failedJoint != nullptr)
+            *failedJoint = id;
+        RobotResult result = Robot_CheckJoint(id);
+        if (result != ROBOT_OK)
+            return result;
+        if (selected[id - 1U])
+            return ROBOT_ERR_INVALID_PARAM;
+        selected[id - 1U] = true;
+        result = Robot_FromJointResult(Joint_CheckMoveToAngle(id, targets[i].angleDeg));
+        if (result != ROBOT_OK)
+            return result;
+    }
+
+    // Phase 2: launch independent moves back-to-back, without waiting.
+    // This is NOT a time-synchronized trajectory or atomic hardware start.
+    for (uint8_t i = 0U; i < count; ++i)
+    {
+        const uint8_t id = targets[i].jointId;
+        RobotResult result = Robot_MoveToAngle(id, targets[i].angleDeg);
+        if (result != ROBOT_OK)
+        {
+            // A runtime launch failure may occur after earlier axes started.
+            // Hard-stop all selected axes and invalidate their coordinates.
+            for (uint8_t k = 0U; k < count; ++k)
+                Robot_Stop(targets[k].jointId, true);
+            if (failedJoint != nullptr)
+                *failedJoint = id;
+            return result;
+        }
+    }
+    if (failedJoint != nullptr)
+        *failedJoint = 0U;
+    return ROBOT_OK;
 }
 
 RobotResult Robot_MoveRelativeAngle(uint8_t jointId, float deltaDeg)

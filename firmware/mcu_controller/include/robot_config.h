@@ -2,25 +2,30 @@
 #define ROBOT_CONFIG_H
 
 #include <stdint.h>
+#include <stdbool.h>
 
 #define ROBOT_JOINT_COUNT 6U
 
-// J1 - Test configuration
-#define J1_STEPS_PER_REV 800U
-#define J1_GEAR_RATIO 100.0f
+// Enable the software channels; this does not detect connected motors.
+#define J1_ENABLED true
+#define J2_ENABLED true
+#define J3_ENABLED true
+#define J4_ENABLED true
+#define J5_ENABLED true
+#define J6_ENABLED true
 
-#define J1_MIN_ANGLE_DEG -180.0f
-#define J1_MAX_ANGLE_DEG 180.0f
+// Default test configuration (copied separately to each joint).
+#define DEFAULT_STEPS_PER_REV 1600U
+#define DEFAULT_GEAR_RATIO 100.0f
+#define DEFAULT_MIN_ANGLE_DEG (-180.0f)
+#define DEFAULT_MAX_ANGLE_DEG 180.0f
+#define DEFAULT_INVERTED false
 
-#define J1_INVERTED false
+#define DEFAULT_SPEED_DEG_S 9.0f
+#define DEFAULT_ACCEL_DEG_S2 6.75f
+#define DEFAULT_LINEAR_ACCEL_DEG 0.45f
 
-#define J1_SPEED_DEG_S 18.0f
-#define J1_ACCEL_DEG_S2 13.5f
-#define J1_LINEAR_ACCEL_DEG 0.9f
-
-// DM542 direction timing
 #define STEPPER_DIR_DELAY_US 50U
+#define STEPPER_DIR_HIGH_COUNTS_UP true
 
-// J2-J6: configure after hardware specifications are confirmed
-
-#endif
+#endif // ROBOT_CONFIG_H

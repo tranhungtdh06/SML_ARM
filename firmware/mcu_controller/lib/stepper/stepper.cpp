@@ -97,16 +97,25 @@ StepperResult Stepper_SetMotionConfig(uint8_t jointId, const StepperMotionConfig
     if (motor->isRunning())
         return STEPPER_ERR_BUSY;
 
+    const bool hadMotion = s_motionValid[index];
+    const StepperMotionConfig old = s_motion[index];
+    StepperResult error = STEPPER_OK;
     if (motor->setSpeedInHz(config->speedHz) != 0)
-    {
-        s_motionValid[index] = false;
-        return STEPPER_ERR_OUT_OF_RANGE;
-    }
+        error = STEPPER_ERR_OUT_OF_RANGE;
+    else if (motor->setAcceleration((int32_t)config->accelerationSteps) != 0)
+        error = STEPPER_ERR_DRIVER;
 
-    if (motor->setAcceleration((int32_t)config->accelerationSteps) != 0)
+    if (error != STEPPER_OK)
     {
         s_motionValid[index] = false;
-        return STEPPER_ERR_DRIVER;
+        if (hadMotion && motor->setSpeedInHz(old.speedHz) == 0 &&
+            motor->setAcceleration((int32_t)old.accelerationSteps) == 0)
+        {
+            motor->setLinearAcceleration(old.linearAccelerationSteps);
+            motor->applySpeedAcceleration();
+            s_motionValid[index] = true;
+        }
+        return error;
     }
 
     motor->setLinearAcceleration(config->linearAccelerationSteps);
@@ -195,7 +204,7 @@ StepperResult Stepper_InvalidatePosition(uint8_t jointId)
     return STEPPER_OK;
 }
 
-StepperResult Stepper_MoveToSteps(uint8_t jointId, int32_t targetSteps)
+StepperResult Stepper_CheckMoveToSteps(uint8_t jointId, int32_t targetSteps)
 {
     StepperResult result = Stepper_CheckMotor(jointId);
     if (result != STEPPER_OK)
@@ -216,7 +225,17 @@ StepperResult Stepper_MoveToSteps(uint8_t jointId, int32_t targetSteps)
 
     if (distance > INT32_MAX || distance < INT32_MIN)
         return STEPPER_ERR_OUT_OF_RANGE;
-    if (targetSteps == current)
+    return STEPPER_OK;
+}
+
+StepperResult Stepper_MoveToSteps(uint8_t jointId, int32_t targetSteps)
+{
+    StepperResult result = Stepper_CheckMoveToSteps(jointId, targetSteps);
+    if (result != STEPPER_OK)
+        return result;
+
+    FastAccelStepper *motor = s_motors[jointId - 1U];
+    if (targetSteps == motor->getCurrentPosition())
         return STEPPER_OK;
 
     return (motor->moveTo(targetSteps) == MOVE_OK) ? STEPPER_OK : STEPPER_ERR_DRIVER;

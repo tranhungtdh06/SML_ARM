@@ -36,8 +36,15 @@ typedef struct
     float angleDeg;
 } RobotJointStatus;
 
+typedef struct
+{
+    uint8_t jointId;
+    float angleDeg;
+} RobotJointTarget;
+
 // Robot initialization and status.
 RobotResult Robot_Init(void);
+uint8_t Robot_GetInitFailedJoint(void);
 RobotResult Robot_GetStatus(uint8_t jointId, RobotJointStatus *status);
 bool Robot_IsReady(void);
 bool Robot_IsJointAvailable(uint8_t jointId);
@@ -51,6 +58,9 @@ RobotResult Robot_SetMotionConfig(uint8_t jointId, const JointMotionConfig *conf
 // Joint position and motion.
 RobotResult Robot_SetZero(uint8_t jointId);
 RobotResult Robot_MoveToAngle(uint8_t jointId, float angleDeg);
+// Independent profiles, nonblocking group launch. failedJoint=0 for general errors.
+RobotResult Robot_MoveGroup(const RobotJointTarget *targets, uint8_t count,
+                            uint8_t *failedJoint);
 RobotResult Robot_MoveRelativeAngle(uint8_t jointId, float deltaDeg);
 RobotResult Robot_GetAngle(uint8_t jointId, float *angleDeg);
 RobotResult Robot_Stop(uint8_t jointId, bool hardStop);

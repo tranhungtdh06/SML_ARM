@@ -59,6 +59,8 @@ StepperResult Stepper_SetLinearAcceleration(uint8_t jointId, uint32_t steps);
 // Position control.
 StepperResult Stepper_SetZero(uint8_t jointId);
 StepperResult Stepper_InvalidatePosition(uint8_t jointId);
+// Validate a move without starting it.
+StepperResult Stepper_CheckMoveToSteps(uint8_t jointId, int32_t targetSteps);
 StepperResult Stepper_MoveToSteps(uint8_t jointId, int32_t targetSteps);
 StepperResult Stepper_MoveRelativeSteps(uint8_t jointId, int32_t deltaSteps);
 
