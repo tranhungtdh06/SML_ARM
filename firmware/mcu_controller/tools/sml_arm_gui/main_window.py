@@ -4,10 +4,12 @@ Uses the existing SerialManager and CommandClient interfaces. No motion is
 issued on startup or on connect. Angles are firmware step estimates, not encoder
 measurements. Software STOP/ESTOP are not hardware safety functions.
 """
+from collections import deque
 from dataclasses import dataclass, field
 from datetime import datetime
 from pathlib import Path
 from time import monotonic
+import json
 import math
 import re
 
@@ -30,6 +32,7 @@ DEFAULTS = {'PPR': '1600', 'GEAR': '100', 'INVERT': '0', 'MIN': '-180',
 CONFIG_COMMANDS = {'PPR', 'GEAR', 'INVERT', 'LIMIT', 'SPEED', 'ACCEL', 'LINEAR'}
 MOTION_COMMANDS = {'GOTO', 'JREL'}
 TIMEOUT = 3.0
+CALIBRATION_FILE = Path(__file__).with_name('calibration_profile.json')
 
 
 def numeric(text, integer=False):
@@ -196,6 +199,7 @@ class MainWindow(QMainWindow):
         self.stops = {}  # STOP/ESTOP can bypass a pending normal request.
         self.need_status = set()
         self.need_config = {}  # joint -> force reload editable fields
+        self.pending_apply = deque()  # queued (verb, joint, args) commands
         self.tracking = set()
         self.next_poll = 0.0
         self.poll_cursor = 0
@@ -210,8 +214,13 @@ class MainWindow(QMainWindow):
         self.timer.setInterval(200)
         self.timer.timeout.connect(self._tick)
         self.refresh_ports()
+        loaded = self._load_calibration_from_file(CALIBRATION_FILE, apply_to_mcu=False, quiet=True)
+        self._show_config()
         self._render()
-        self._log('INFO', 'Ready. Default values are local only; connect to read firmware.')
+        if loaded:
+            self._log('INFO', f'Loaded saved calibration from {CALIBRATION_FILE.name}; will auto-apply on connect.')
+        else:
+            self._log('INFO', 'Ready. Default values are local only; connect to read firmware.')
 
     # ---------------- UI: native, compact widgets ----------------
     def _button(self, text, action, color=None):
@@ -532,6 +541,16 @@ class MainWindow(QMainWindow):
         self.reload_btn = self._button('Reload from firmware', lambda: self._request('CONFIG', self.selected_joint, reload=True))
         row.addWidget(self.reload_btn)
         root.addLayout(row)
+        cal_row = QHBoxLayout()
+        self.auto_apply_cal = QCheckBox('Auto-apply saved file on connect')
+        self.auto_apply_cal.setChecked(True)
+        cal_row.addWidget(self.auto_apply_cal, 1)
+        self.save_cal_btn = self._button('Save calibration', self._save_calibration, '#d6eadf')
+        self.save_cal_as_btn = self._button('Save as…', self._save_calibration_as)
+        self.load_cal_btn = self._button('Load & apply…', self._load_calibration_dialog)
+        for b in (self.save_cal_btn, self.save_cal_as_btn, self.load_cal_btn):
+            cal_row.addWidget(b)
+        root.addLayout(cal_row)
         return page
 
     def _build_monitor(self):
@@ -635,6 +654,7 @@ class MainWindow(QMainWindow):
         self.stops.clear()
         self.need_status.clear()
         self.need_config.clear()
+        self.pending_apply.clear()
         self.tracking.clear()
         self.status_seen.clear()
         self.configs.clear()
@@ -801,6 +821,9 @@ class MainWindow(QMainWindow):
                     self.ready = True
                     self.need_status.update(LINKED_JOINTS)
                     self.need_config.update({i: True for i in LINKED_JOINTS})
+                    if self.auto_apply_cal.isChecked() and CALIBRATION_FILE.exists():
+                        if self._load_calibration_from_file(CALIBRATION_FILE, apply_to_mcu=True, quiet=False):
+                            self._log('INFO', f'Auto-applying saved calibration from {CALIBRATION_FILE.name}...')
             elif p.verb == 'STATUS':
                 d = p.data
                 state = self.states[j]
@@ -878,6 +901,13 @@ class MainWindow(QMainWindow):
             j = min(self.need_status)
             self.need_status.remove(j)
             self._request('STATUS', j)
+        elif self.pending_apply:
+            while self.pending_apply:
+                verb, j, args = self.pending_apply.popleft()
+                if j in LINKED_JOINTS and self.states[j].available and not self.states[j].running:
+                    self._request(verb, j, *args)
+                    return
+                self._log('WARN', f'Skipped {verb} for J{j}: joint unavailable or busy.')
         elif self.need_config:
             j = min(self.need_config)
             force = self.need_config.pop(j)
@@ -1041,6 +1071,75 @@ class MainWindow(QMainWindow):
         else:
             args = (self.config_fields[verb].text(),)
         self._issue_values(verb, j, args)
+
+    def _validate_joint_draft(self, data):
+        validated = {}
+        for verb in ('PPR', 'GEAR', 'INVERT', 'SPEED', 'ACCEL', 'LINEAR'):
+            validated[verb] = self._validate_args(verb, (str(data[verb]),))[0]
+        low, high = self._validate_args('LIMIT', (str(data['MIN']), str(data['MAX'])))
+        validated['MIN'], validated['MAX'] = low, high
+        return validated
+
+    def _save_calibration_to_path(self, path):
+        try:
+            joints_data = {}
+            for j in LINKED_JOINTS:
+                joints_data[str(j)] = self._validate_joint_draft(self.drafts[j])
+            payload = {'version': 1, 'saved_at': datetime.now().isoformat(timespec='seconds'), 'joints': joints_data}
+            Path(path).write_text(json.dumps(payload, indent=2) + '\n', encoding='utf-8')
+            self._log('OK', f'Saved calibration for J1–J6 to {path}')
+            return True
+        except (ValueError, KeyError, OSError) as exc:
+            self._log('ERROR', f'Failed to save calibration: {exc}')
+            return False
+
+    def _save_calibration(self):
+        self._save_calibration_to_path(CALIBRATION_FILE)
+
+    def _save_calibration_as(self):
+        path, _ = QFileDialog.getSaveFileName(self, 'Save calibration profile', str(CALIBRATION_FILE), 'JSON files (*.json)')
+        if path:
+            self._save_calibration_to_path(path)
+
+    def _load_calibration_from_file(self, path, apply_to_mcu=True, quiet=False):
+        file_path = Path(path)
+        if not file_path.exists():
+            if not quiet:
+                self._log('WARN', f'Calibration file not found: {file_path}')
+            return False
+        try:
+            payload = json.loads(file_path.read_text(encoding='utf-8'))
+            joints = payload.get('joints', {})
+            loaded = {}
+            for j in LINKED_JOINTS:
+                if str(j) not in joints:
+                    raise ValueError(f'Missing J{j} in calibration file.')
+                loaded[j] = self._validate_joint_draft(joints[str(j)])
+        except (OSError, ValueError, TypeError, json.JSONDecodeError) as exc:
+            if not quiet:
+                self._log('ERROR', f'Invalid calibration file: {exc}')
+            return False
+
+        for j, data in loaded.items():
+            self.drafts[j] = data
+            self.dirty[j].clear()
+        self._show_config()
+
+        if apply_to_mcu and self.connected and self.ready and not self.protocol_fault:
+            self.pending_apply.clear()
+            for j, data in loaded.items():
+                for verb in ('PPR', 'GEAR', 'INVERT', 'SPEED', 'ACCEL', 'LINEAR'):
+                    self.pending_apply.append((verb, j, (data[verb],)))
+                self.pending_apply.append(('LIMIT', j, (data['MIN'], data['MAX'])))
+                self.need_config[j] = True
+            self._dispatch()
+        self._render()
+        return True
+
+    def _load_calibration_dialog(self):
+        path, _ = QFileDialog.getOpenFileName(self, 'Load calibration profile', str(CALIBRATION_FILE), 'JSON files (*.json)')
+        if path and self._load_calibration_from_file(path, apply_to_mcu=True, quiet=False):
+            self._log('INFO', f'Loaded calibration from {path}.')
 
     def _refresh_all(self):
         self.need_status.update(LINKED_JOINTS)
