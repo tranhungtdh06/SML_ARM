@@ -1,37 +1,38 @@
-default_velocity_scaling_factor: 0.5
-default_acceleration_scaling_factor: 0.5
+default_velocity_scaling_factor: 1.0
+default_acceleration_scaling_factor: 1.0
 
 joint_limits:
+  # Calibrated from firmware/mcu_controller/tools/sml_arm_gui/calibration_profile.json
   dof_joint1:
     has_velocity_limits: true
-    max_velocity: 2.5
+    max_velocity: 0.5236     # 30.00 deg/s
     has_acceleration_limits: true
-    max_acceleration: 5.0
+    max_acceleration: 0.3098 # 17.75 deg/s^2
   dof_joint2:
     has_velocity_limits: true
-    max_velocity: 2.5
+    max_velocity: 0.1571     # 9.00 deg/s
     has_acceleration_limits: true
-    max_acceleration: 5.0
+    max_acceleration: 0.1178 # 6.75 deg/s^2
   dof_joint3:
     has_velocity_limits: true
-    max_velocity: 2.5
+    max_velocity: 0.6109     # 35.00 deg/s
     has_acceleration_limits: true
-    max_acceleration: 5.0
+    max_acceleration: 0.3622 # 20.75 deg/s^2
   dof_joint4:
     has_velocity_limits: true
-    max_velocity: 2.5
+    max_velocity: 0.6981     # 40.00 deg/s
     has_acceleration_limits: true
-    max_acceleration: 5.0
+    max_acceleration: 0.4494 # 25.75 deg/s^2
   dof_joint5:
     has_velocity_limits: true
-    max_velocity: 2.5
+    max_velocity: 0.1571     # 9.00 deg/s
     has_acceleration_limits: true
-    max_acceleration: 5.0
+    max_acceleration: 0.1178 # 6.75 deg/s^2
   dof_joint6:
     has_velocity_limits: true
-    max_velocity: 3.0
+    max_velocity: 0.1571     # 9.00 deg/s
     has_acceleration_limits: true
-    max_acceleration: 6.0
+    max_acceleration: 0.1178 # 6.75 deg/s^2
   gripper_left_finger_joint:
     has_velocity_limits: true
     max_velocity: 0.5

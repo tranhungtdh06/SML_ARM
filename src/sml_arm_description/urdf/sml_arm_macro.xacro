@@ -771,7 +771,7 @@
       <axis xyz="-0 -0 -1"/>
       <parent link="${prefix}j1_harmonic_drive"/>
       <child link="${prefix}link_1"/>
-      <limit lower="-3.14159" upper="3.14159" effort="100.0" velocity="2.5"/>
+      <limit lower="-3.14159" upper="3.14159" effort="100.0" velocity="0.5236"/>
       <dynamics damping="0.5" friction="0.1"/>
     </joint>
 
@@ -780,7 +780,7 @@
       <axis xyz="-1 -0 -0"/>
       <parent link="${prefix}j2_harmonic_drive"/>
       <child link="${prefix}link_2__1_"/>
-      <limit lower="-1.5708" upper="1.5708" effort="100.0" velocity="2.5"/>
+      <limit lower="-1.5708" upper="1.5708" effort="100.0" velocity="0.1571"/>
       <dynamics damping="0.5" friction="0.1"/>
     </joint>
 
@@ -789,7 +789,7 @@
       <axis xyz="1 -0 -0"/>
       <parent link="${prefix}j3_harmonic_drive"/>
       <child link="${prefix}link_3__1_"/>
-      <limit lower="-2.35619" upper="2.35619" effort="100.0" velocity="2.5"/>
+      <limit lower="-2.35619" upper="2.35619" effort="100.0" velocity="0.6109"/>
       <dynamics damping="0.5" friction="0.1"/>
     </joint>
 
@@ -798,7 +798,7 @@
       <axis xyz="-0 2.85712e-16 -1"/>
       <parent link="${prefix}j4_harmonic_drive"/>
       <child link="${prefix}link_4__1_"/>
-      <limit lower="-3.14159" upper="3.14159" effort="50.0" velocity="2.5"/>
+      <limit lower="-3.14159" upper="3.14159" effort="50.0" velocity="0.6981"/>
       <dynamics damping="0.5" friction="0.1"/>
     </joint>
 
@@ -807,7 +807,7 @@
       <axis xyz="-1 -2.77556e-16 -7.93011e-32"/>
       <parent link="${prefix}j5_harmonic_drive"/>
       <child link="${prefix}link_5__1_"/>
-      <limit lower="-2.0944" upper="2.0944" effort="50.0" velocity="2.5"/>
+      <limit lower="-2.0944" upper="2.0944" effort="50.0" velocity="0.1571"/>
       <dynamics damping="0.5" friction="0.1"/>
     </joint>
 
@@ -900,7 +900,7 @@
       <axis xyz="0 0 -1"/>
       <parent link="${prefix}j6_harmonic_drive"/>
       <child link="${prefix}ee_link"/>
-      <limit lower="-3.14159" upper="3.14159" effort="50.0" velocity="3.0"/>
+      <limit lower="-3.14159" upper="3.14159" effort="50.0" velocity="0.1571"/>
       <dynamics damping="0.2" friction="0.05"/>
     </joint>
 

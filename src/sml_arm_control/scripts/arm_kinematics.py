@@ -37,6 +37,46 @@ JOINT_LIMITS: List[Tuple[float, float]] = [
     (-3.14159, 3.14159),
 ]
 
+# Calibrated from firmware/mcu_controller/tools/sml_arm_gui/calibration_profile.json (rad/s, rad/s^2)
+JOINT_MAX_VELOCITIES: List[float] = [
+    math.radians(30.0),  # 0.5236 rad/s
+    math.radians(9.0),   # 0.1571 rad/s
+    math.radians(35.0),  # 0.6109 rad/s
+    math.radians(40.0),  # 0.6981 rad/s
+    math.radians(9.0),   # 0.1571 rad/s
+    math.radians(9.0),   # 0.1571 rad/s
+]
+
+JOINT_MAX_ACCELS: List[float] = [
+    math.radians(17.75), # 0.3098 rad/s^2
+    math.radians(6.75),  # 0.1178 rad/s^2
+    math.radians(20.75), # 0.3622 rad/s^2
+    math.radians(25.75), # 0.4494 rad/s^2
+    math.radians(6.75),  # 0.1178 rad/s^2
+    math.radians(6.75),  # 0.1178 rad/s^2
+]
+
+
+def compute_segment_duration(
+    q_start: Sequence[float],
+    q_end: Sequence[float],
+    speed_scale: float = 1.0,
+    min_duration: float = 0.25,
+) -> float:
+    """Compute realistic trapezoidal-profile segment time (s) across all 6 joints."""
+    s = max(0.05, float(speed_scale))
+    worst = min_duration
+    for qs, qe, vmax, amax in zip(q_start, q_end, JOINT_MAX_VELOCITIES, JOINT_MAX_ACCELS):
+        dq = abs(float(qe) - float(qs))
+        if dq < 1e-6:
+            continue
+        v = vmax * s
+        a = amax * s
+        t = (dq / v + v / a) if dq >= (v * v / a) else 2.0 * math.sqrt(dq / a)
+        if t > worst:
+            worst = t
+    return worst
+
 POSES: Dict[str, List[float]] = {
     'home': [0.0, 0.0, 0.0, 0.0, 0.0, 0.0],
     'ready': [0.0, -0.45, 0.90, 0.0, 0.65, 0.0],

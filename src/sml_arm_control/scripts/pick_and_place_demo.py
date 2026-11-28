@@ -15,7 +15,7 @@ from std_msgs.msg import Float64MultiArray
 from trajectory_msgs.msg import JointTrajectory, JointTrajectoryPoint
 
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
-from arm_kinematics import ARM_JOINTS, POSES, duration_from_seconds  # noqa: E402
+from arm_kinematics import ARM_JOINTS, POSES, compute_segment_duration, duration_from_seconds  # noqa: E402
 
 
 GRIPPER_OPEN = 0.038
@@ -97,24 +97,28 @@ class PickAndPlaceDemo(Node):
 
         steps = [
             ('gripper', GRIPPER_OPEN, 0.35 / s),
-            ('arm', 'ready', 1.2 / s),
-            ('arm', src_pre, 1.5 / s),
-            ('arm', src_grasp, 1.2 / s),
+            ('arm', 'ready', None),
+            ('arm', src_pre, None),
+            ('arm', src_grasp, None),
             ('gripper', GRIPPER_GRASP, 0.6 / s),
-            ('arm', src_pre, 1.2 / s),
-            ('arm', dst_pre, 1.8 / s),
-            ('arm', dst_drop, 1.2 / s),
+            ('arm', src_pre, None),
+            ('arm', dst_pre, None),
+            ('arm', dst_drop, None),
             ('gripper', GRIPPER_OPEN, 0.5 / s),
-            ('arm', dst_pre, 1.0 / s),
-            ('arm', 'ready', 1.2 / s),
+            ('arm', dst_pre, None),
+            ('arm', 'ready', None),
         ]
 
+        prev_q = POSES['home'] if forward else POSES['ready']
         for kind, target, dur in steps:
             if kind == 'gripper':
-                self.set_gripper(float(target), dur)
+                self.set_gripper(float(target), float(dur))
             else:
-                if not self.move_arm(str(target), POSES[str(target)], dur):
+                q_target = POSES[str(target)]
+                seg_dur = compute_segment_duration(prev_q, q_target, speed_scale=s)
+                if not self.move_arm(str(target), q_target, seg_dur):
                     return False
+                prev_q = q_target
         return True
 
 

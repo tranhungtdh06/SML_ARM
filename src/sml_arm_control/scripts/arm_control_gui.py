@@ -42,10 +42,12 @@ sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 from arm_kinematics import (  # noqa: E402
     ARM_JOINTS,
     JOINT_LIMITS,
+    JOINT_MAX_VELOCITIES,
     POSES,
     clamp_joints,
     compute_fk_local,
     compute_ik_local,
+    compute_segment_duration,
     duration_from_seconds,
     matrix_to_quat,
     matrix_to_rpy,
@@ -954,7 +956,7 @@ class MainWindow(QtWidgets.QMainWindow):
         self.spin_vel = QtWidgets.QSpinBox()
         self.spin_vel.setRange(5, 100)
         self.spin_vel.setSingleStep(5)
-        self.spin_vel.setValue(50)
+        self.spin_vel.setValue(100)
         top_bar.addWidget(self.spin_vel)
 
         self.chk_live_jog = QtWidgets.QCheckBox('Real-Time Jog (Instant)')
@@ -1435,13 +1437,14 @@ class MainWindow(QtWidgets.QMainWindow):
         self._refresh_fk_labels()
 
     def _rt_reach_time(self) -> float:
-        max_delta = max(
-            abs(t - a) for t, a in zip(self._target_joints, self._actual_joints)
-        )
-        # Keep angular velocity strictly within URDF limits even on fast slider flicks
-        max_vel = max(0.25, 2.0 * (self.spin_vel.value() / 100.0))
-        base_dt = max(0.04, 0.08 * (50.0 / max(10, self.spin_vel.value())))
-        return max(base_dt, max_delta / max_vel)
+        vel_scale = max(0.05, self.spin_vel.value() / 100.0)
+        base_dt = max(0.04, 0.08 / vel_scale)
+        worst_dt = base_dt
+        for t, a, vmax in zip(self._target_joints, self._actual_joints, JOINT_MAX_VELOCITIES):
+            dt = abs(t - a) / max(1e-3, vmax * vel_scale)
+            if dt > worst_dt:
+                worst_dt = dt
+        return worst_dt
 
     def _queue_rt_stream(self) -> None:
         if not self._rt_in_cooldown:
@@ -1721,20 +1724,28 @@ class MainWindow(QtWidgets.QMainWindow):
 
     def _populate_pick_and_place_waypoints(self) -> None:
         self.tbl_waypoints.setRowCount(0)
-        pnp_steps = [
-            ('1_ReadyOpen', POSES['ready'], 1.2, 38.0),
-            ('2_PrePick', POSES['pre_pick'], 1.5, 38.0),
-            ('3_DescendPick', POSES['pick'], 1.2, 38.0),
+        vel_scale = max(0.05, self.spin_vel.value() / 100.0)
+        raw_steps = [
+            ('1_ReadyOpen', POSES['ready'], None, 38.0),
+            ('2_PrePick', POSES['pre_pick'], None, 38.0),
+            ('3_DescendPick', POSES['pick'], None, 38.0),
             ('4_GraspCube', POSES['pick'], 0.6, 15.5),
-            ('5_LiftCube', POSES['pre_pick'], 1.2, 15.5),
-            ('6_PrePlace', POSES['pre_place'], 1.8, 15.5),
-            ('7_DescendPlace', POSES['place'], 1.2, 15.5),
+            ('5_LiftCube', POSES['pre_pick'], None, 15.5),
+            ('6_PrePlace', POSES['pre_place'], None, 15.5),
+            ('7_DescendPlace', POSES['place'], None, 15.5),
             ('8_ReleaseCube', POSES['place'], 0.5, 38.0),
-            ('9_RetractPlace', POSES['pre_place'], 1.0, 38.0),
-            ('10_ReturnReady', POSES['ready'], 1.2, 38.0),
+            ('9_RetractPlace', POSES['pre_place'], None, 38.0),
+            ('10_ReturnReady', POSES['ready'], None, 38.0),
         ]
-        for wp_name, joints, dur, grip_mm in pnp_steps:
+        prev_q = self._actual_joints
+        for wp_name, joints, fixed_dur, grip_mm in raw_steps:
+            dur = (
+                fixed_dur
+                if fixed_dur is not None
+                else round(compute_segment_duration(prev_q, joints, speed_scale=vel_scale), 2)
+            )
             self._add_waypoint(joints, name=wp_name, duration=dur, gripper_mm=grip_mm)
+            prev_q = joints
 
     def _run_pick_and_place_demo(self) -> None:
         self._stop_sequence()
