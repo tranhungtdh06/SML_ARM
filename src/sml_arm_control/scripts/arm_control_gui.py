@@ -586,15 +586,22 @@ class RosBridgeWorker(QtCore.QObject):
     def stream_joint_positions_rt(
         self, positions: Sequence[float], reach_time_sec: float = 0.06
     ) -> None:
-        """Publish a low-latency JointTrajectory topic message for real-time jogging."""
-        if self._rt_traj_pub is None:
+        """Publish a low-latency single-point JointTrajectory topic message for real-time jogging."""
+        self.stream_joint_trajectory_rt([(positions, max(0.04, reach_time_sec))])
+
+    def stream_joint_trajectory_rt(
+        self, waypoints: Sequence[Tuple[Sequence[float], float]]
+    ) -> None:
+        """Publish a low-latency multi-point JointTrajectory topic message for straight-line jogging."""
+        if self._rt_traj_pub is None or not waypoints:
             return
         traj = JointTrajectory()
         traj.joint_names = list(ARM_JOINTS)
-        pt = JointTrajectoryPoint()
-        pt.positions = [float(p) for p in positions]
-        pt.time_from_start = duration_from_seconds(max(0.04, reach_time_sec))
-        traj.points = [pt]
+        for positions, t_sec in waypoints:
+            pt = JointTrajectoryPoint()
+            pt.positions = [float(p) for p in positions]
+            pt.time_from_start = duration_from_seconds(max(0.04, float(t_sec)))
+            traj.points.append(pt)
         self._rt_traj_pub.publish(traj)
 
     def send_joint_trajectory(self, positions: Sequence[float], duration_sec: float) -> None:
@@ -897,6 +904,7 @@ class MainWindow(QtWidgets.QMainWindow):
         self._manual_target_pending = False
         self._preview_staged = False
         self._motion_in_flight = False
+        self._cart_ref_pose: Optional[Tuple[List[float], List[float]]] = None
 
         self.bridge = RosBridgeWorker(ros_args=ros_args)
         self.bridge.joint_states_received.connect(self._on_joint_states)
@@ -1388,6 +1396,7 @@ class MainWindow(QtWidgets.QMainWindow):
             self._updating_widgets = False
 
     def _stage_execution_target_ui(self) -> None:
+        self._cart_ref_pose = None
         self._preview_staged = False
         self._manual_target_pending = False
         self._motion_in_flight = True
@@ -1397,13 +1406,14 @@ class MainWindow(QtWidgets.QMainWindow):
         else:
             self._sync_target_widgets()
 
-    def _mark_manual_jog(self) -> None:
+    def _mark_manual_jog(self, stream_rt: bool = True) -> None:
         if self.chk_live_jog.isChecked():
             self._manual_target_pending = True
             self._preview_staged = False
             self._motion_in_flight = False
             self._last_manual_jog_time = time.monotonic()
-            self._queue_rt_stream()
+            if stream_rt:
+                self._queue_rt_stream()
         else:
             self._preview_staged = True
             self._manual_target_pending = False
@@ -1466,6 +1476,7 @@ class MainWindow(QtWidgets.QMainWindow):
     def _on_slider_changed(self, idx: int, raw: int) -> None:
         if self._updating_widgets:
             return
+        self._cart_ref_pose = None
         self._target_joints[idx] = math.radians(raw / 10.0) if self._use_degrees else (raw / 1000.0)
         self._updating_widgets = True
         self.joint_spins[idx].setValue(math.degrees(self._target_joints[idx]) if self._use_degrees else self._target_joints[idx])
@@ -1477,6 +1488,7 @@ class MainWindow(QtWidgets.QMainWindow):
     def _on_spin_changed(self, idx: int, val: float) -> None:
         if self._updating_widgets:
             return
+        self._cart_ref_pose = None
         self._target_joints[idx] = math.radians(val) if self._use_degrees else val
         self._updating_widgets = True
         self.joint_sliders[idx].setValue(int(round(val * 10)) if self._use_degrees else int(round(val * 1000)))
@@ -1486,6 +1498,7 @@ class MainWindow(QtWidgets.QMainWindow):
         self._mark_manual_jog()
 
     def _jog_joint(self, idx: int, sign: int) -> None:
+        self._cart_ref_pose = None
         step_deg = float(self.cmb_joint_step.currentText().rstrip('°'))
         self._target_joints[idx] += sign * math.radians(step_deg)
         self._target_joints = list(clamp_joints(self._target_joints))
@@ -1525,11 +1538,66 @@ class MainWindow(QtWidgets.QMainWindow):
         for sp, v in zip(self.ik_spins, vals):
             sp.setValue(v)
 
+    def _cartesian_lookahead_busy(self) -> bool:
+        """Prevent held Cartesian auto-repeat from racing far ahead of slow joints."""
+        if not self.chk_live_jog.isChecked() or not self._first_js_received:
+            return False
+        vel_scale = max(0.05, self.spin_vel.value() / 100.0)
+        lag_s = max(
+            abs(t - a) / max(1e-3, vmax * vel_scale)
+            for t, a, vmax in zip(self._target_joints, self._actual_joints, JOINT_MAX_VELOCITIES)
+        )
+        return lag_s > 0.22
+
+    def _build_cartesian_line_waypoints(
+        self, target_xyz: Sequence[float], target_rpy: Sequence[float], q_target: Sequence[float]
+    ) -> List[Tuple[List[float], float]]:
+        """Interpolate straight-line Cartesian waypoints from actual pose to target pose."""
+        vel_scale = max(0.05, self.spin_vel.value() / 100.0)
+        q_start = list(self._actual_joints if self._first_js_received else self._target_joints)
+        fk_start = compute_fk_local(q_start, frame='world')
+        xyz0 = fk_start['xyz']
+        rpy0 = fk_start['rpy']
+
+        cart_dist = math.sqrt(sum((b - a) ** 2 for a, b in zip(xyz0, target_xyz)))
+        drpy = [math.atan2(math.sin(b - a), math.cos(b - a)) for a, b in zip(rpy0, target_rpy)]
+        rot_dist = max(abs(d) for d in drpy)
+
+        n_sub = max(1, min(12, int(math.ceil(max(cart_dist / 0.004, rot_dist / math.radians(2.0))))))
+        waypoints: List[Tuple[List[float], float]] = []
+        q_prev = q_start
+        t_cum = 0.0
+        for step_i in range(1, n_sub):
+            alpha = step_i / float(n_sub)
+            xi = [a + alpha * (b - a) for a, b in zip(xyz0, target_xyz)]
+            ri = [a + alpha * d for a, d in zip(rpy0, drpy)]
+            ok_sub, q_sub, _, _ = compute_ik_local(
+                xi, target_rpy=ri, seed_joints=q_prev, frame='world', position_only=False, fast_jog=True
+            )
+            if not ok_sub:
+                continue
+            q_sub_list = [float(v) for v in q_sub]
+            t_cum += compute_segment_duration(q_prev, q_sub_list, speed_scale=vel_scale, min_duration=0.04)
+            waypoints.append((q_sub_list, t_cum))
+            q_prev = q_sub_list
+
+        q_end = [float(v) for v in q_target]
+        t_cum += compute_segment_duration(q_prev, q_end, speed_scale=vel_scale, min_duration=0.04)
+        waypoints.append((q_end, t_cum))
+        return waypoints
+
     def _cartesian_jog(self, axis_idx: int, sign: int, is_linear: bool) -> None:
-        # Jog relative to target pose using fast warm-started DLS IK
-        fk = compute_fk_local(self._target_joints, frame='world')
-        xyz = list(fk['xyz'])
-        rpy = list(fk['rpy'])
+        if self._cartesian_lookahead_busy():
+            return
+
+        if self._cart_ref_pose is None:
+            fk = compute_fk_local(self._target_joints, frame='world')
+            xyz = list(fk['xyz'])
+            rpy = list(fk['rpy'])
+        else:
+            xyz = list(self._cart_ref_pose[0])
+            rpy = list(self._cart_ref_pose[1])
+
         if is_linear:
             step_mm = float(self.cmb_cart_lin.currentText().split()[0])
             xyz[axis_idx] += sign * (step_mm / 1000.0)
@@ -1551,13 +1619,19 @@ class MainWindow(QtWidgets.QMainWindow):
                 f'rot_err={math.degrees(rot_err):.1f}°).'
             )
             return
+        self._cart_ref_pose = (list(xyz), list(rpy))
         self._target_joints = [float(v) for v in q_sol]
         self._sync_target_widgets()
         for sp, v in zip(self.ik_spins, xyz + [math.degrees(a) for a in rpy]):
             sp.blockSignals(True)
             sp.setValue(v)
             sp.blockSignals(False)
-        self._mark_manual_jog()
+        if self.chk_live_jog.isChecked():
+            self._mark_manual_jog(stream_rt=False)
+            waypoints = self._build_cartesian_line_waypoints(xyz, rpy, self._target_joints)
+            self.bridge.stream_joint_trajectory_rt(waypoints)
+        else:
+            self._mark_manual_jog(stream_rt=False)
 
     def _request_ik(self, execute: bool) -> None:
         xyz = [self.ik_spins[0].value(), self.ik_spins[1].value(), self.ik_spins[2].value()]
@@ -1628,6 +1702,7 @@ class MainWindow(QtWidgets.QMainWindow):
             self._sync_target_widgets()
 
     def _sync_from_actual(self) -> None:
+        self._cart_ref_pose = None
         self._preview_staged = False
         self._manual_target_pending = False
         self._motion_in_flight = False
@@ -1860,6 +1935,7 @@ class MainWindow(QtWidgets.QMainWindow):
             and not any_joint_drag
         ):
             if not self._motion_in_flight and not self._sequence_running:
+                self._cart_ref_pose = None
                 self._target_joints = list(self._actual_joints)
                 self.viewport.set_target_joints(self._target_joints)
             self._sync_sliders_to_joints(self._actual_joints)
@@ -1930,6 +2006,11 @@ def run_self_test() -> int:
         print(f'SELF-TEST FAILED: IK pos_err={pos_err}', file=sys.stderr)
         return 1
     win._cartesian_jog(0, +1, True)
+    fk_line = compute_fk_local(win._target_joints, frame='world')
+    line_wps = win._build_cartesian_line_waypoints(fk_line['xyz'], fk_line['rpy'], win._target_joints)
+    if not line_wps:
+        print('SELF-TEST FAILED: empty Cartesian line waypoints', file=sys.stderr)
+        return 1
     win._set_gripper_width(0.0155, publish=False)
     win._populate_pick_and_place_waypoints()
 
