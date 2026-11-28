@@ -18,6 +18,7 @@ install(
     scripts/arm_kinematics.py
     scripts/arm_control_gui.py
     scripts/pick_and_place_demo.py
+    scripts/sync_calibration.py
   DESTINATION lib/${PROJECT_NAME}
 )
 

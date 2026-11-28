@@ -120,6 +120,9 @@ ros2 run sml_arm_control arm_kinematics.py --ik 0.0 -0.35 0.70 --position-only
 ros2 run sml_arm_control arm_commander.py --pose ready --gripper open
 ros2 run sml_arm_control arm_commander.py --joints 0.2 -0.4 0.8 0.0 0.6 0.0 --duration 3.0
 ros2 run sml_arm_control arm_commander.py --daemon
+
+# Sync updated firmware calibration_profile.json speed/accel to MoveIt 2 & URDF
+ros2 run sml_arm_control sync_calibration.py
 ```
 
 Or inside **Control Studio GUI**, click **`Run Pick & Place Demo`** (with optional **`Loop`**) in Panel 6. See [`docs/control_studio_manual.md`](docs/control_studio_manual.md) for every button, jog slider, IK planner setting, and waypoint sequencer control.

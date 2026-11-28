@@ -2,7 +2,9 @@
 """Forward & Inverse Kinematics library and CLI (local analytical chain + MoveIt 2 services)."""
 
 import argparse
+import json
 import math
+import os
 import sys
 from typing import Dict, List, Optional, Sequence, Tuple
 
@@ -37,8 +39,8 @@ JOINT_LIMITS: List[Tuple[float, float]] = [
     (-3.14159, 3.14159),
 ]
 
-# Calibrated from firmware/mcu_controller/tools/sml_arm_gui/calibration_profile.json (rad/s, rad/s^2)
-JOINT_MAX_VELOCITIES: List[float] = [
+# Fallback limits (rad/s, rad/s^2) overridden automatically if calibration_profile.json is found
+_DEFAULT_MAX_VELOCITIES: List[float] = [
     math.radians(30.0),  # 0.5236 rad/s
     math.radians(9.0),   # 0.1571 rad/s
     math.radians(35.0),  # 0.6109 rad/s
@@ -47,7 +49,7 @@ JOINT_MAX_VELOCITIES: List[float] = [
     math.radians(9.0),   # 0.1571 rad/s
 ]
 
-JOINT_MAX_ACCELS: List[float] = [
+_DEFAULT_MAX_ACCELS: List[float] = [
     math.radians(17.75), # 0.3098 rad/s^2
     math.radians(6.75),  # 0.1178 rad/s^2
     math.radians(20.75), # 0.3622 rad/s^2
@@ -55,6 +57,49 @@ JOINT_MAX_ACCELS: List[float] = [
     math.radians(6.75),  # 0.1178 rad/s^2
     math.radians(6.75),  # 0.1178 rad/s^2
 ]
+
+
+def find_calibration_profile() -> Optional[str]:
+    """Locate firmware calibration_profile.json from env var or workspace tree."""
+    env_path = os.environ.get('SML_ARM_CALIBRATION_PROFILE')
+    if env_path and os.path.isfile(env_path):
+        return env_path
+    rel = os.path.join('firmware', 'mcu_controller', 'tools', 'sml_arm_gui', 'calibration_profile.json')
+    cur = os.path.dirname(os.path.realpath(__file__))
+    for _ in range(8):
+        cand = os.path.join(cur, rel)
+        if os.path.isfile(cand):
+            return cand
+        parent = os.path.dirname(cur)
+        if parent == cur:
+            break
+        cur = parent
+    return None
+
+
+def load_calibrated_motion_limits() -> Tuple[List[float], List[float], Optional[str]]:
+    """Load per-joint max velocity (rad/s) and accel (rad/s^2) from calibration_profile.json."""
+    vel = list(_DEFAULT_MAX_VELOCITIES)
+    acc = list(_DEFAULT_MAX_ACCELS)
+    path = find_calibration_profile()
+    if not path:
+        return vel, acc, None
+    try:
+        with open(path, 'r', encoding='utf-8') as f:
+            data = json.load(f)
+        joints = data.get('joints', {})
+        for idx in range(6):
+            entry = joints.get(str(idx + 1), {})
+            if 'SPEED' in entry:
+                vel[idx] = max(1e-3, math.radians(float(entry['SPEED'])))
+            if 'ACCEL' in entry:
+                acc[idx] = max(1e-3, math.radians(float(entry['ACCEL'])))
+        return vel, acc, path
+    except Exception:
+        return list(_DEFAULT_MAX_VELOCITIES), list(_DEFAULT_MAX_ACCELS), None
+
+
+JOINT_MAX_VELOCITIES, JOINT_MAX_ACCELS, CALIBRATION_PROFILE_PATH = load_calibrated_motion_limits()
 
 
 def compute_segment_duration(
